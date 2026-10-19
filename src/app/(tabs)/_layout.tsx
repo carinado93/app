@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/tabs';
 import type { ComponentProps } from 'react';
-import type { ColorValue } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
 import { useApp } from '@/store/app-state';
@@ -25,7 +25,12 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.sageDark,
         tabBarInactiveTintColor: Colors.muted,
-        tabBarStyle: { backgroundColor: Colors.creamLight, borderTopColor: Colors.creamDark },
+        tabBarStyle: {
+          backgroundColor: Colors.creamLight,
+          borderTopColor: Colors.creamDark,
+          // The web preview has no safe-area inset, so give the labels room.
+          ...(Platform.OS === 'web' && { height: 64, paddingBottom: 8 }),
+        },
         tabBarLabelStyle: { fontFamily: Fonts.sansMedium, fontSize: 11 },
         sceneStyle: { backgroundColor: Colors.cream },
       }}>

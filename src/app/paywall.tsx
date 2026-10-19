@@ -94,7 +94,7 @@ export default function Paywall() {
           <Body style={styles.small}>
             Preview mode: Google Play billing is not connected yet.
           </Body>
-          {__DEV__ && (
+          {(__DEV__ || process.env.EXPO_PUBLIC_TEST_MODE === '1') && (
             <>
               <Gap size={Spacing.sm} />
               <Button

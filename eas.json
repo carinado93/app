@@ -2,7 +2,11 @@
   "cli": { "appVersionSource": "remote" },
   "build": {
     "development": { "developmentClient": true, "distribution": "internal" },
-    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_TEST_MODE": "1" }
+    },
     "production": { "autoIncrement": true }
   },
   "submit": {

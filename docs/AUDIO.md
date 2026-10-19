@@ -17,6 +17,18 @@ Files arrive named by code and language, e.g. `R07 EN`, `R03 DE Einatmen`.
    split at the silences in the order of the script and report the number of pieces found.
 5. **Same loudness everywhere**: normalise all files to about −16 LUFS so the app never jumps in volume.
 
+## Retakes
+
+Carina says **"again"** (also in the German files) when she makes a mistake, then repeats the whole sentence.
+The faulty first try and the "again" are removed; only the second version stays. A clap works the same way.
+
+## Tool
+
+`tools/audio/clean_recordings.py` does steps 1, 2, 3 (partly) and 5 automatically and prints a report per file:
+beeps removed, every retake it cut (with time and the removed text) and the full transcript of what stays.
+It recognises speech locally with Whisper (sherpa-onnx, model `sherpa-onnx-whisper-small`), see the setup notes
+at the top of the script. Check the report: a retake marked `"sure": false` should be listened to.
+
 ## Minimum pause after each step (guided exercises)
 
 | Code | Exercise | Pause after each step |

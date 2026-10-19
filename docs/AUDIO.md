@@ -33,6 +33,8 @@ at the top of the script. Check the report: a retake marked `"sure": false` shou
 
 - **R23 Heel Drops:** probably an "again" retake around "Let yourself drop softly onto your heels". Check that it was cut.
   After "Repeat 15–20 times" the pause must be long enough to actually do 15–20 heel drops (about 20 s).
+- **R26 Safe Place:** "again" retake right after the first sentence, then the first sentence is repeated.
+  Check that the first try and the "again" were cut and only the second version of the first sentence stays.
 
 ## Minimum pause after each step (guided exercises)
 

@@ -12,11 +12,11 @@ Speech is recognised locally with Whisper (sherpa-onnx), nothing is uploaded any
 Setup (once):
   pip install sherpa-onnx numpy soundfile
   curl -L -o whisper.tar.bz2 \
-    https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-base.tar.bz2
+    https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2
   tar xjf whisper.tar.bz2
 
 Usage:
-  python tools/audio/clean_recordings.py --model sherpa-onnx-whisper-base --out cleaned/ "R19 DE.m4a" ...
+  python tools/audio/clean_recordings.py --model sherpa-onnx-whisper-small --out cleaned/ "R19 DE.m4a" ...
   The language is taken from the file name (EN / DE), default English.
 """
 import argparse
@@ -50,7 +50,7 @@ def frame_db(x: np.ndarray, sr=SR) -> np.ndarray:
     return 20 * np.log10(np.sqrt((frames**2).mean(axis=1)) + 1e-9)
 
 
-def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.08):
+def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.03):
     """Non-silent stretches as (start, end) seconds. Threshold adapts to the room noise."""
     db = frame_db(x, sr)
     noise = np.percentile(db, 10)
@@ -89,29 +89,43 @@ def normalise(text: str) -> str:
     return re.sub(r'[^a-zäöüß ]', '', text.lower()).strip()
 
 
+def matches_start(first_try: str, repeat: str) -> float:
+    """How well a (possibly cut-off) first try matches the beginning of the repeated sentence, 0..1."""
+    a, b = normalise(first_try), normalise(repeat)
+    if len(a) < 12 or not b:
+        return 0.0  # too short to judge safely
+    return difflib.SequenceMatcher(None, a, b[: len(a) + 4]).ratio()
+
+
 def find_retakes(chunks):
-    """Indices of chunks to delete. chunks: list of dicts with 'text'."""
+    """
+    Indices of chunks to delete. A retake is a short marker ("again", "nochmal", a clap, or a short
+    word the recogniser misheard) followed by a sentence that repeats what was said just before it.
+    The repeat is the reliable signal; the marker word alone is often misheard.
+    """
     drop = set()
     for i, c in enumerate(chunks):
-        # A clap is a very short sound without words; it marks a retake just like "again".
-        clap = not normalise(c['text']) and c['end'] - c['start'] < 0.3
-        if normalise(c['text']) not in RETAKE_WORDS and not clap:
+        text = normalise(c['text'])
+        short = c['end'] - c['start'] < 1.2 and len(text.split()) <= 2
+        said_again = text in RETAKE_WORDS
+        clap = not text and c['end'] - c['start'] < 0.3
+        if not (said_again or clap or short) or i == 0 or i + 1 >= len(chunks):
             continue
-        drop.add(i)
-        # The repeated sentence starts right after "again"; find where its first try started.
-        after = normalise(' '.join(ch['text'] for ch in chunks[i + 1 : i + 3]))
-        best, best_score = None, 0.0
-        for j in range(i - 1, max(i - 8, -1), -1):
+        repeat = ' '.join(ch['text'] for ch in chunks[i + 1 : i + 4])
+        # The first try may span several chunks (pauses inside a sentence): take the longest span that still matches.
+        start, score = None, 0.0
+        for j in range(i - 1, max(i - 5, -1), -1):
             if j in drop:
-                continue
-            before = normalise(chunks[j]['text'])
-            score = difflib.SequenceMatcher(None, before[: len(after)], after[: len(before)]).ratio()
-            if before and score > best_score:
-                best, best_score = j, score
-        start = best if best is not None and best_score >= 0.5 else i - 1
-        c['retake_from'] = start
-        c['retake_confident'] = best_score >= 0.5
-        drop.update(range(max(start, 0), i))
+                break
+            span = ' '.join(ch['text'] for ch in chunks[j:i])
+            sc = matches_start(span, repeat)
+            if sc >= 0.8:
+                start, score = j, sc
+        if start is None and not said_again:
+            continue  # a short word that belongs to the script, e.g. "Hold,"
+        c['retake_from'] = start if start is not None else i - 1
+        c['retake_confident'] = start is not None
+        drop.update(range(c['retake_from'], i + 1))
     return drop
 
 

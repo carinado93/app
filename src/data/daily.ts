@@ -51,7 +51,7 @@ export const TINY_STEPS: Record<Weather, string[]> = {
     'Put on one song you love and move a little.',
     'Have something warm to drink.',
     'Step into daylight for 5 minutes.',
-    'Text one person: "Thinking of you."',
+    'Text one person: "Thinking of you." or "Just checking in."',
   ],
 };
 

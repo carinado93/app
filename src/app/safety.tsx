@@ -40,7 +40,7 @@ export default function Safety() {
       <Gap />
       <Body style={styles.small}>
         {t(
-          'Exercises like cold exposure and breath holds are not suitable for everyone. If you are pregnant or have heart, lung or other medical conditions, talk to your doctor first.',
+          'Breathing exercises with breath holds are not suitable for everyone. If you are pregnant or have heart, lung or other medical conditions, talk to your doctor first.',
         )}
       </Body>
     </Screen>

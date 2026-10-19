@@ -18,7 +18,7 @@ const PAGES = [
     eyebrow: 'Not all at once',
     title: 'One small step',
     accent: 'a day.',
-    body: 'Every day you get one tiny step, matched to how your body feels today. Missed a day? Your streak forgives you.',
+    body: 'Every day you get one tiny step, matched to how your body feels today. Missed a day? Simply come back when you are ready. There is nothing to catch up on and no reason to feel bad.',
   },
   {
     eyebrow: 'Important',

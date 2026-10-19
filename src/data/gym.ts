@@ -75,13 +75,13 @@ export const GYM: GymLevel[] = [
     id: 'capacity',
     level: 3,
     title: 'Capacity',
-    focus: 'Train your body to stay calm in small, safe doses of discomfort.',
+    focus: 'Train your body to stay calm when things get a little uncomfortable.',
     sessions: [
       {
         id: 'c1',
-        title: 'Cool exposure',
-        exerciseIds: ['cold'],
-        challenge: 'End your shower with 15 seconds of cool water. Breathe slowly through it.',
+        title: 'A kind inner voice',
+        exerciseIds: ['affirmations'],
+        challenge: 'When something feels hard today, say one affirmation slowly on your out-breath.',
       },
       {
         id: 'c2',
@@ -111,9 +111,9 @@ export const GYM: GymLevel[] = [
       },
       {
         id: 'x2',
-        title: 'Cool exposure, level 2',
-        exerciseIds: ['cold', 'sigh'],
-        challenge: 'End your shower with 30 seconds of cool water.',
+        title: 'Calm in conflict',
+        exerciseIds: ['name-it', 'affirmations'],
+        challenge: 'In your next tense conversation, take one slow breath out before you answer.',
       },
       {
         id: 'x3',

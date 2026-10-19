@@ -61,7 +61,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'One small no',
-        intro: 'Burnout often grows from too many yeses. Today you practise one small, safe no.',
+        intro: 'Overwhelm often grows from too many yeses. Today you practise one small, safe no.',
         scenarioId: 'boss-project',
         task: 'Say no to one small thing today that you would usually say yes to.',
         reflection: 'How did it feel to say no? What happened afterwards?',
@@ -83,20 +83,21 @@ export const PROGRAMS: Program[] = [
     ],
   },
   {
-    id: 'burnout-recovery',
+    id: 'overwhelm-prevention',
     title: '21-Day',
-    accent: 'Burnout Recovery',
-    summary: 'Three weeks to stop the drain, restore your energy and protect it, one small step a day.',
+    accent: 'Overwhelm Prevention',
+    summary:
+      'Three weeks to notice the early signs of overload, refill your energy and protect it, so stress doesn’t turn into burnout. One small step a day.',
     free: false,
     weeks: [
-      { title: 'Week 1 · Stop the drain', fromDay: 1 },
-      { title: 'Week 2 · Restore', fromDay: 8 },
+      { title: 'Week 1 · Notice', fromDay: 1 },
+      { title: 'Week 2 · Refill', fromDay: 8 },
       { title: 'Week 3 · Protect', fromDay: 15 },
     ],
     days: [
       {
         title: 'Where you are',
-        intro: 'Before we change anything, we look honestly at where you are. No judgement, just noticing.',
+        intro: 'Prevention starts with noticing. Today you look honestly at how you are doing. No judgement, just noticing.',
         articleId: 'burnout-signs',
         exerciseId: 'body-scan',
         task: 'Write down the three signs of stress you notice most in yourself right now.',
@@ -111,7 +112,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'The first brake',
-        intro: 'When you are running on empty, your body is stuck in alarm. Your breath can start to bring it down.',
+        intro: 'When the days get too full, your body slips into alarm mode. Your breath is the first brake.',
         exerciseId: 'long-exhale',
         task: 'Do the 4-7-8 breath once in the morning and once before bed.',
         reflection: 'How did your body respond to the long exhale?',
@@ -125,7 +126,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'Sleep first',
-        intro: 'Recovery happens during sleep. Protecting your sleep is the most important step this week.',
+        intro: 'Your body refills its energy during sleep. Protecting your sleep is one of the strongest ways to prevent overload.',
         articleId: 'sleep',
         exerciseId: 'sleep-wind-down',
         task: 'No screens for the last 30 minutes before bed tonight.',
@@ -148,7 +149,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'Your rhythm',
-        intro: 'Your nervous system recovers in small pieces throughout the day, not only at the weekend.',
+        intro: 'Your nervous system refills in small pieces throughout the day, not only at the weekend.',
         articleId: 'rest',
         exerciseId: 'eye-palming',
         task: 'Set three reminders today for a 3-minute break.',
@@ -156,7 +157,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'Coming back to life',
-        intro: 'After long stress, many people feel numb. Today we gently wake the body up.',
+        intro: 'When stress builds up, the body can start to feel flat or numb. Today we gently wake it up.',
         articleId: 'shutdown',
         exerciseId: 'heel-drop',
         task: 'Spend 15 minutes in daylight today, ideally moving.',
@@ -178,7 +179,7 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'Joy is medicine',
-        intro: 'Recovery is not only about less stress. It is also about more of what nourishes you.',
+        intro: 'Prevention is not only about less stress. It is also about more of what nourishes you.',
         exerciseId: 'three-good',
         task: 'Do one small thing today just because you enjoy it.',
         reflection: 'What did you choose? When did you last do it?',

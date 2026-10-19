@@ -11,7 +11,7 @@ import { useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 const FEATURES = [
-  '21-Day Burnout Recovery program',
+  '21-Day Overwhelm Prevention program',
   'All 26 body exercises, incl. sleep wind-down',
   'The full Nervous System Gym (4 levels)',
   'All Learn articles',

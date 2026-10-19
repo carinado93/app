@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Application from 'expo-application';
 import { router } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Body, Button, Card, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { LINKS } from '@/constants/links';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { restore } from '@/lib/purchases';
+import { TEST_MODE } from '@/lib/test-mode';
 import { remindersSupported, setDailyReminder } from '@/lib/reminders';
 import { LANGUAGES, useLang, useT } from '@/i18n';
 import { gentleStreak, useApp } from '@/store/app-state';
@@ -46,6 +47,27 @@ export default function Profile() {
       <Eyebrow>{t('Your space')}</Eyebrow>
       <Heading accent={t('& settings.')}>{t('Profile')}</Heading>
       <Gap size={Spacing.lg} />
+
+      {TEST_MODE && (
+        <>
+          <Card style={styles.testCard}>
+            <View style={styles.memberRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>{t('Test version').toUpperCase()}</Text>
+                <Text style={styles.testTitle}>{t('Premium for testing')}</Text>
+                <Text style={styles.testNote}>{t('Switch off to see the app like a free user.')}</Text>
+              </View>
+              <Switch
+                value={app.testPremium}
+                onValueChange={app.setTestPremium}
+                trackColor={{ true: Colors.sage, false: Colors.creamDark }}
+                thumbColor={Colors.white}
+              />
+            </View>
+          </Card>
+          <Gap size={Spacing.lg} />
+        </>
+      )}
 
       {/* Membership */}
       <Card>
@@ -223,6 +245,9 @@ function Row({
 
 const styles = StyleSheet.create({
   memberRow: { flexDirection: 'row', alignItems: 'center' },
+  testCard: { borderWidth: 1.5, borderColor: Colors.lavender, borderStyle: 'dashed' },
+  testTitle: { fontFamily: Fonts.serif, fontSize: 22, color: Colors.ink },
+  testNote: { fontFamily: Fonts.sansLight, fontSize: 13, color: Colors.text },
   label: { fontFamily: Fonts.sansMedium, fontSize: 11, letterSpacing: 2, color: Colors.lavender },
   memberTitle: { fontFamily: Fonts.serif, fontSize: 30, color: Colors.ink },
   note: { fontFamily: Fonts.sansLight, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },

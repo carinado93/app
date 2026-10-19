@@ -6,6 +6,7 @@ import type { ProgramProgress } from '@/data/programs';
 import type { TriggerEntry } from '@/data/triggers';
 import type { Lang } from '@/i18n';
 import { initPurchases, onPremiumChange } from '@/lib/purchases';
+import { TEST_MODE } from '@/lib/test-mode';
 
 const STORAGE_KEY = 'naao-state-v1';
 
@@ -25,6 +26,8 @@ type PersistedState = {
   activeProgram: string | null;
   /** Chosen on the very first screen; null until then. */
   language: Lang | null;
+  /** Test builds only: Premium switched on without a purchase. */
+  testPremium: boolean;
 };
 
 const EMPTY: PersistedState = {
@@ -37,6 +40,7 @@ const EMPTY: PersistedState = {
   programs: {},
   activeProgram: null,
   language: null,
+  testPremium: false,
 };
 
 export const todayKey = (d = new Date()) =>
@@ -82,6 +86,8 @@ type AppState = PersistedState & {
   /** Deletes all check-ins, steps and triggers on this phone. */
   resetData: () => void;
   setPremium: (value: boolean) => void;
+  /** Test builds only: switch Premium on or off without buying. */
+  setTestPremium: (value: boolean) => void;
 };
 
 const AppContext = createContext<AppState | null>(null);
@@ -89,7 +95,7 @@ const AppContext = createContext<AppState | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(EMPTY);
   const [loaded, setLoaded] = useState(false);
-  const [isPremium, setPremium] = useState(false);
+  const [purchased, setPremium] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -117,7 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {
       ...state,
       loaded,
-      isPremium,
+      isPremium: purchased || (TEST_MODE && state.testPremium),
       todayWeather: state.checkIns.find((c) => c.date === today)?.weather,
       checkIn: (weather) =>
         update((s) => ({
@@ -158,8 +164,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }),
       resetData: () => update((s) => ({ ...EMPTY, onboarded: s.onboarded, language: s.language })),
       setPremium,
+      setTestPremium: (value) => update((s) => ({ ...s, testPremium: value })),
     };
-  }, [state, loaded, isPremium, update]);
+  }, [state, loaded, purchased, update]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

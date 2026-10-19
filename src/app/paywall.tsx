@@ -21,7 +21,7 @@ const FEATURES = [
 ];
 
 export default function Paywall() {
-  const { setPremium, isPremium } = useApp();
+  const { setPremium, setTestPremium, isPremium } = useApp();
   const t = useT();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan['id']>('annual');
@@ -107,7 +107,7 @@ export default function Paywall() {
               <Button
                 title={t('Preview: unlock premium')}
                 onPress={() => {
-                  setPremium(true);
+                  setTestPremium(true);
                   router.back();
                 }}
               />

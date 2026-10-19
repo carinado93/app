@@ -281,6 +281,9 @@ export const UI: { de: Record<string, string> } = {
     "Good morning": "Guten Morgen",
     "Good afternoon": "Guten Tag",
     "Good evening": "Guten Abend",
+    "Test version": "Testversion",
+    "Premium for testing": "Premium zum Testen",
+    "Switch off to see the app like a free user.": "Ausschalten, um die App wie eine Gratis-Nutzerin zu sehen.",
     "{done} of {total} days": "{done} von {total} Tagen",
   },
 };

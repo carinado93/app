@@ -6,6 +6,8 @@ For every input file:
   2. finds retakes: when she says "again" (or "nochmal" / "noch einmal"), the sentence before it is
      cut out together with the "again", so only the second, clean version stays,
   3. evens out the loudness (about -16 LUFS), trims to 0.5 s of silence at both ends and fades the edges,
+  5. with --music: lays calm music quietly under the whole track, a little lower while she speaks
+     (make some with tools/audio/make_ambient.py or use your own file),
   4. for recordings in PLANS (e.g. R30, played as one piece without tapping "Next"): stretches the pause
      after each step to the time the body needs and ends it with a soft tick-tick-tick countdown.
 
@@ -19,6 +21,7 @@ Setup (once):
 
 Usage:
   python tools/audio/clean_recordings.py --model sherpa-onnx-whisper-small --out cleaned/ "R19 DE.m4a" ...
+  Add --music ambient.m4a for background music (e.g. R30 Sleep Wind-Down).
   The language is taken from the file name (EN / DE), default English.
 """
 import argparse
@@ -183,6 +186,29 @@ def countdown_pause(seconds: float, level: float, sr=48000) -> np.ndarray:
     return out
 
 
+def add_music(voice: np.ndarray, speech: list, music_path: Path, sr=48000) -> np.ndarray:
+    """
+    Music under the whole track: about 20 dB below the voice in the pauses, 6 dB lower still while she speaks,
+    fading in at the start and out over an 8-second tail after the last word. Loops if the music is shorter.
+    """
+    voice = np.concatenate([voice, np.zeros(8 * sr, dtype=np.float32)])
+    music = load(music_path, sr)
+    music = np.tile(music, int(np.ceil(len(voice) / len(music))))[: len(voice)]
+    talking = np.zeros(len(voice), dtype=np.float32)
+    for a, b in speech:
+        talking[a:b] = 1
+    ramp = int(0.4 * sr)  # smooth the dips so the music never jumps
+    talking = np.convolve(talking, np.ones(ramp) / ramp, mode='same')
+    rms = lambda y: np.sqrt((y**2).mean()) + 1e-9  # noqa: E731
+    voice_rms = rms(np.concatenate([voice[a:b] for a, b in speech])) if speech else 0.1
+    gain = voice_rms * 10 ** (-20 / 20) / rms(music)
+    duck = gain * (1 - talking * (1 - 10 ** (-6 / 20)))
+    fade_in, fade_out = 3 * sr, 8 * sr
+    duck[:fade_in] *= np.linspace(0, 1, fade_in)
+    duck[-fade_out:] *= np.linspace(1, 0, fade_out) ** 2
+    return voice + music * duck
+
+
 def loudnorm(inp: Path, out: Path):
     """
     About -16 LUFS with one fixed gain for the whole file, so quiet parts (pauses, ticks) are not pumped up
@@ -200,7 +226,7 @@ def loudnorm(inp: Path, out: Path):
     )
 
 
-def process(path: Path, out_dir: Path, recognizer_for) -> dict:
+def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None) -> dict:
     lang = 'de' if re.search(r'\bDE\b', path.stem, re.I) else 'en'
     x = load(path)
     segs = segments(x)
@@ -248,7 +274,7 @@ def process(path: Path, out_dir: Path, recognizer_for) -> dict:
     hi = load(path, 48000)
     # Ticks sit well below the voice so they guide without waking anyone up.
     tick_level = 0.25 * max((np.abs(hi[int(c['start'] * 48000) : int(c['end'] * 48000)]).max(initial=0) for c in keep), default=0)
-    pieces, prev_end = [], None
+    pieces, prev_end, speech, pos = [], None, [], int(0.5 * 48000)
     for c in keep:
         s, e = c['start'], c['end']
         if prev_end is not None:
@@ -258,13 +284,19 @@ def process(path: Path, out_dir: Path, recognizer_for) -> dict:
                 pieces.append(countdown_pause(max(gap, c['pause']), tick_level))
             else:
                 pieces.append(np.zeros(int(gap * 48000), dtype=np.float32))
+        pos += len(pieces[-1]) if prev_end is not None else 0
         pieces.append(hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.12) * 48000)])
+        speech.append((pos, pos + len(pieces[-1])))
+        pos += len(pieces[-1])
         prev_end = e
     pad = np.zeros(int(0.5 * 48000), dtype=np.float32)
     audio = np.concatenate([pad, *pieces, pad]) if pieces else pad
     fade = int(0.05 * 48000)
     audio[:fade] *= np.linspace(0, 1, fade)
     audio[-fade:] *= np.linspace(1, 0, fade)
+    if music:
+        audio = add_music(audio, speech, music)
+        report['music'] = music.name
 
     out_dir.mkdir(parents=True, exist_ok=True)
     tmp = out_dir / (path.stem + '.tmp.wav')
@@ -279,6 +311,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--model', required=True, help='folder of sherpa-onnx-whisper-*')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--music', type=Path, help='background music laid under every file of this run')
     ap.add_argument('files', nargs='+')
     a = ap.parse_args()
     m = Path(a.model)
@@ -297,7 +330,7 @@ def main():
             )
         return cache[lang]
 
-    reports = [process(Path(f), Path(a.out), recognizer_for) for f in a.files]
+    reports = [process(Path(f), Path(a.out), recognizer_for, a.music) for f in a.files]
     json.dump(reports, sys.stdout, ensure_ascii=False, indent=2)
 
 

@@ -6,14 +6,17 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { Body, Button, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { buy, getPlans, purchasesEnabled, restore, type Plan } from '@/lib/purchases';
+import { TEST_MODE } from '@/lib/test-mode';
 import { useApp } from '@/store/app-state';
 
 const FEATURES = [
-  'All body exercises, incl. humming & cold reset',
+  '21-Day Burnout Recovery program',
+  'All 26 body exercises, incl. sleep wind-down',
   'The full Nervous System Gym (4 levels)',
+  'All Learn articles',
   'Your personal trigger patterns',
-  'AI boundary practice with coach feedback',
-  'New exercises every month',
+  'AI boundary practice: 10 real-life situations',
+  'New content every month',
 ];
 
 export default function Paywall() {
@@ -94,7 +97,7 @@ export default function Paywall() {
           <Body style={styles.small}>
             Preview mode: Google Play billing is not connected yet.
           </Body>
-          {(__DEV__ || process.env.EXPO_PUBLIC_TEST_MODE === '1') && (
+          {TEST_MODE && (
             <>
               <Gap size={Spacing.sm} />
               <Button

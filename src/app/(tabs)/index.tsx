@@ -7,6 +7,8 @@ import { Body, Button, Card, Eyebrow, Gap, Heading, PremiumBadge, Quote, Screen 
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { dailyPlan, dayIndex, QUOTES, WEATHER } from '@/data/daily';
 import { getExercise } from '@/data/exercises';
+import { ARTICLES } from '@/data/learn';
+import { getProgram, nextProgramDay } from '@/data/programs';
 import { gentleStreak, todayKey, useApp } from '@/store/app-state';
 
 function greeting() {
@@ -17,7 +19,7 @@ function greeting() {
 }
 
 export default function Today() {
-  const { todayWeather, stepsDone, markStepDone, isPremium } = useApp();
+  const { todayWeather, stepsDone, markStepDone, isPremium, activeProgram, programs } = useApp();
   const streak = gentleStreak(stepsDone);
   const doneToday = stepsDone.includes(todayKey());
   const sos = getExercise('sigh')!;
@@ -69,6 +71,9 @@ export default function Today() {
       )}
 
       <Gap size={Spacing.lg} />
+      <ProgramCard activeProgram={activeProgram} programs={programs} />
+
+      <Gap size={Spacing.lg} />
       <View style={styles.streakRow}>
         <Card style={styles.streakCard}>
           <Text style={styles.streakNumber}>{streak}</Text>
@@ -82,8 +87,72 @@ export default function Today() {
       <Text style={styles.streakNote}>Missing one day never breaks your streak. Not all at once.</Text>
 
       <Gap size={Spacing.lg} />
+      <LearnCard isPremium={isPremium} />
+
+      <Gap size={Spacing.lg} />
       <Quote>{QUOTES[dayIndex() % QUOTES.length]}</Quote>
     </Screen>
+  );
+}
+
+function ProgramCard({
+  activeProgram,
+  programs,
+}: {
+  activeProgram: string | null;
+  programs: ReturnType<typeof useApp>['programs'];
+}) {
+  const program = getProgram(activeProgram ?? 'stress-reset')!;
+  const progress = programs[program.id];
+  const open = () => router.push({ pathname: '/program/[id]', params: { id: program.id } });
+
+  if (!progress) {
+    return (
+      <Card onPress={open}>
+        <Eyebrow>Start here</Eyebrow>
+        <Text style={styles.cardTitle}>
+          {program.title} <Text style={styles.accent}>{program.accent}</Text>
+        </Text>
+        <Body>{program.summary}</Body>
+        <Gap size={Spacing.sm} />
+        <Text style={styles.meta}>Free · 5–10 min a day</Text>
+      </Card>
+    );
+  }
+
+  const { day, finished, availableToday } = nextProgramDay(program, progress, todayKey());
+  return (
+    <Card onPress={open}>
+      <Eyebrow>{`${program.title} ${program.accent}`}</Eyebrow>
+      <Text style={styles.cardTitle}>
+        {finished
+          ? 'Program complete 🌿'
+          : availableToday
+            ? `Day ${day}: ${program.days[day - 1].title}`
+            : `Day ${day} opens tomorrow`}
+      </Text>
+      <Text style={styles.meta}>
+        {finished ? 'Choose your next program in the Gym tab' : availableToday ? 'Tap to start today’s day' : 'Today’s day is done. Well done.'}
+      </Text>
+    </Card>
+  );
+}
+
+function LearnCard({ isPremium }: { isPremium: boolean }) {
+  // Show a different article every day; free users get the free ones.
+  const pool = isPremium ? ARTICLES : ARTICLES.filter((a) => a.free);
+  const article = pool[dayIndex() % pool.length];
+  return (
+    <Card onPress={() => router.push({ pathname: '/learn/[id]', params: { id: article.id } })}>
+      <View style={styles.exerciseHeader}>
+        <Eyebrow>{`Learn · ${article.minutes} min`}</Eyebrow>
+        <Text style={styles.allLink} onPress={() => router.push('/learn')}>
+          All articles
+        </Text>
+      </View>
+      <Text style={styles.cardTitle}>{article.title}</Text>
+      <Body>{article.intro}</Body>
+    </Card>
   );
 }
 
@@ -152,6 +221,8 @@ const styles = StyleSheet.create({
   },
   sosText: { fontFamily: Fonts.sansBold, color: Colors.white, letterSpacing: 2, fontSize: 14 },
   cardTitle: { fontFamily: Fonts.serif, fontSize: 24, lineHeight: 30, color: Colors.ink },
+  accent: { fontFamily: Fonts.serifItalic, color: Colors.sageDark },
+  allLink: { fontFamily: Fonts.sansMedium, fontSize: 13, color: Colors.sageDark },
   weatherRow: { fontSize: 32, letterSpacing: 8 },
   weatherPill: {
     alignSelf: 'flex-start',

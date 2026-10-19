@@ -48,6 +48,9 @@ function RootStack() {
         <Stack.Screen name="checkin" options={{ title: '', presentation: 'modal' }} />
         <Stack.Screen name="exercise/[id]" options={{ title: '' }} />
         <Stack.Screen name="roleplay/[id]" options={{ title: 'Practice' }} />
+        <Stack.Screen name="program/[id]" options={{ title: '' }} />
+        <Stack.Screen name="learn/index" options={{ title: '' }} />
+        <Stack.Screen name="learn/[id]" options={{ title: '' }} />
         <Stack.Screen name="paywall" options={{ title: '', presentation: 'modal' }} />
         <Stack.Screen name="safety" options={{ title: 'Help & safety' }} />
       </Stack>

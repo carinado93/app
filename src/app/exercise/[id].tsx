@@ -17,7 +17,7 @@ const PLAYERS = {
 };
 
 export default function ExerciseScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, unlocked } = useLocalSearchParams<{ id: string; unlocked?: string }>();
   const exercise = getExercise(id);
   const { isPremium } = useApp();
   const [finished, setFinished] = useState(false);
@@ -30,7 +30,8 @@ export default function ExerciseScreen() {
     );
   }
 
-  const locked = !exercise.free && !isPremium;
+  // Exercises inside a program day are always open.
+  const locked = !exercise.free && !isPremium && unlocked !== '1';
   const Player = PLAYERS[exercise.kind];
 
   return (

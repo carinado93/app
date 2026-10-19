@@ -99,6 +99,62 @@ export const SCENARIOS: Scenario[] = [
     ],
     free: false,
   },
+  {
+    id: 'colleague-dump',
+    title: 'A colleague hands me their work',
+    emoji: '📂',
+    role: 'a friendly colleague who regularly passes their tasks on to the user',
+    situation: 'The colleague wants the user to finish their report because they are "totally swamped".',
+    opening: "You're a lifesaver, honestly. Could you just finish my report for tomorrow? I'm completely swamped.",
+    phrases: [
+      'I can see you’re stressed. I can’t take your report, my plate is full too.',
+      'I can give you 15 minutes to think it through together, but I can’t write it.',
+      'Let’s ask our manager to prioritise, so neither of us burns out.',
+    ],
+    free: false,
+  },
+  {
+    id: 'sick-day',
+    title: 'Work calls on my sick day',
+    emoji: '🤒',
+    role: 'a manager who calls the user on a sick day and asks for "just a quick thing"',
+    situation: 'The user is at home sick and wants to rest fully.',
+    opening: "Hi! Sorry to bother you while you're sick. Could you just quickly join the client call at 2? It's only 30 minutes.",
+    phrases: [
+      'I’m sick today and I need to rest to get better. I won’t join the call.',
+      'Please ask a colleague to cover, or we move it to when I’m back.',
+      'I’ll be back as soon as I’m healthy. Until then I’m offline.',
+    ],
+    free: false,
+  },
+  {
+    id: 'friend-venting',
+    title: 'A friend always vents to me',
+    emoji: '☎️',
+    role: 'a friend who calls often to vent at length and rarely asks how the user is',
+    situation: 'The user is exhausted and doesn’t have the capacity for a long call tonight.',
+    opening: "Oh my god, you won't believe what happened today. Do you have an hour? I really need to talk.",
+    phrases: [
+      'I care about you, and tonight I don’t have the energy for a long call. Can we talk tomorrow for 20 minutes?',
+      'I can listen for 15 minutes, then I need to rest.',
+      'I’ve noticed I’m running on empty lately. I need our talks to go both ways.',
+    ],
+    free: false,
+  },
+  {
+    id: 'school-volunteer',
+    title: 'I’m asked to volunteer again',
+    emoji: '🏫',
+    role: 'a parent from the school committee who keeps asking the user to organise events',
+    situation: 'The user has organised the last three events and wants someone else to do it this time.',
+    opening: "You did such an amazing job with the summer party! You'll do the winter market too, right? Nobody does it like you.",
+    phrases: [
+      'Thank you! I’ve done the last three, so this time I’m saying no.',
+      'I can help for one hour on the day, but I won’t organise it.',
+      'It would be a good chance for someone new to try it.',
+    ],
+    free: false,
+  },
 ];
 
 export const getScenario = (id: string) => SCENARIOS.find((s) => s.id === id);

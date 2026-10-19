@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { Weather } from '@/data/exercises';
+import type { ProgramProgress } from '@/data/programs';
 import type { TriggerEntry } from '@/data/triggers';
 import { initPurchases, onPremiumChange } from '@/lib/purchases';
 
@@ -18,6 +19,9 @@ type PersistedState = {
   onboarded: boolean;
   /** Hour of the daily reminder, or null when off. */
   reminderHour: number | null;
+  programs: Record<string, ProgramProgress>;
+  /** The program shown on the Today screen. */
+  activeProgram: string | null;
 };
 
 const EMPTY: PersistedState = {
@@ -27,6 +31,8 @@ const EMPTY: PersistedState = {
   triggers: [],
   onboarded: false,
   reminderHour: null,
+  programs: {},
+  activeProgram: null,
 };
 
 export const todayKey = (d = new Date()) =>
@@ -66,6 +72,8 @@ type AppState = PersistedState & {
   removeTrigger: (id: string) => void;
   finishOnboarding: () => void;
   setReminderHour: (hour: number | null) => void;
+  startProgram: (id: string) => void;
+  completeProgramDay: (id: string, day: number, note: string) => void;
   /** Deletes all check-ins, steps and triggers on this phone. */
   resetData: () => void;
   setPremium: (value: boolean) => void;
@@ -117,6 +125,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeTrigger: (id) => update((s) => ({ ...s, triggers: s.triggers.filter((t) => t.id !== id) })),
       finishOnboarding: () => update((s) => ({ ...s, onboarded: true })),
       setReminderHour: (hour) => update((s) => ({ ...s, reminderHour: hour })),
+      startProgram: (id) =>
+        update((s) => ({
+          ...s,
+          activeProgram: id,
+          programs: s.programs[id] ? s.programs : { ...s.programs, [id]: { startedAt: Date.now(), days: {} } },
+        })),
+      completeProgramDay: (id, day, note) =>
+        update((s) => {
+          const progress = s.programs[id] ?? { startedAt: Date.now(), days: {} };
+          return {
+            ...s,
+            programs: {
+              ...s.programs,
+              [id]: { ...progress, days: { ...progress.days, [day]: { doneOn: today, note: note.trim() || undefined } } },
+            },
+            // Doing the program day also counts as today's small step.
+            stepsDone: s.stepsDone.includes(today) ? s.stepsDone : [...s.stepsDone, today],
+          };
+        }),
       resetData: () => update((s) => ({ ...EMPTY, onboarded: s.onboarded })),
       setPremium,
     };

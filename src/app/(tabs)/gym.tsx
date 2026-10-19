@@ -6,13 +6,14 @@ import { Body, Button, Card, Eyebrow, Gap, Heading, PremiumBadge, Screen, usePre
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { getExercise } from '@/data/exercises';
 import { ALL_SESSIONS, GYM } from '@/data/gym';
+import { PROGRAMS } from '@/data/programs';
 import { useApp } from '@/store/app-state';
 
 /** The first session is a free taster; everything else is premium. */
 const FREE_SESSION = 'f1';
 
 export default function Gym() {
-  const { gymDone, markGymDone, isPremium } = useApp();
+  const { gymDone, markGymDone, isPremium, programs } = useApp();
   const gate = usePremiumGate();
   const progress = gymDone.length / ALL_SESSIONS.length;
   // Next session = first one not done yet.
@@ -29,6 +30,30 @@ export default function Gym() {
       </Body>
       <Gap size={Spacing.lg} />
 
+      <Eyebrow>Guided programs</Eyebrow>
+      {PROGRAMS.map((p) => {
+        const done = Object.keys(programs[p.id]?.days ?? {}).length;
+        return (
+          <Card
+            key={p.id}
+            style={styles.program}
+            onPress={() => router.push({ pathname: '/program/[id]', params: { id: p.id } })}>
+            <View style={styles.sessionHeader}>
+              <Text style={styles.programTitle}>
+                {p.title} <Text style={styles.programAccent}>{p.accent}</Text>
+              </Text>
+              {p.free ? <Text style={styles.free}>FREE</Text> : !isPremium && <PremiumBadge />}
+            </View>
+            <Body>{p.summary}</Body>
+            <Text style={styles.programMeta}>
+              {done === 0 ? `${p.days.length} days · 5–10 min a day` : `${done} of ${p.days.length} days done`}
+            </Text>
+          </Card>
+        );
+      })}
+      <Gap size={Spacing.lg} />
+
+      <Eyebrow>Gym levels</Eyebrow>
       <Card>
         <Text style={styles.progressLabel}>
           {gymDone.length} of {ALL_SESSIONS.length} sessions
@@ -104,6 +129,11 @@ export default function Gym() {
 }
 
 const styles = StyleSheet.create({
+  program: { marginBottom: Spacing.md },
+  programTitle: { fontFamily: Fonts.serif, fontSize: 26, color: Colors.ink, flex: 1 },
+  programAccent: { fontFamily: Fonts.serifItalic, color: Colors.sageDark },
+  programMeta: { fontFamily: Fonts.sansMedium, fontSize: 13, color: Colors.muted, marginTop: Spacing.sm },
+  free: { fontFamily: Fonts.sansMedium, fontSize: 10, letterSpacing: 1.5, color: Colors.sage },
   progressLabel: { fontFamily: Fonts.sansMedium, color: Colors.text, marginBottom: Spacing.sm },
   bar: { height: 10, borderRadius: Radius.pill, backgroundColor: Colors.creamDark, overflow: 'hidden' },
   barFill: { height: '100%', backgroundColor: Colors.sage },

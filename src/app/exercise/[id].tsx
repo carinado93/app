@@ -18,7 +18,7 @@ const PLAYERS = {
 };
 
 export default function ExerciseScreen() {
-  const { id, unlocked } = useLocalSearchParams<{ id: string; unlocked?: string }>();
+  const { id, unlocked, sos } = useLocalSearchParams<{ id: string; unlocked?: string; sos?: string }>();
   const t = useT();
   const exercise = useContent().exercise(id);
   const { isPremium } = useApp();
@@ -68,7 +68,7 @@ export default function ExerciseScreen() {
           <Button title={t('Do it again')} variant="outline" onPress={() => setFinished(false)} />
         </Card>
       ) : (
-        <Player exercise={exercise} onFinish={() => setFinished(true)} />
+        <Player exercise={exercise} sos={sos === '1'} onFinish={() => setFinished(true)} />
       )}
 
       <Gap size={Spacing.xl} />

@@ -43,7 +43,7 @@ export default function Today() {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push({ pathname: '/exercise/[id]', params: { id: sos.id } });
+          router.push({ pathname: '/exercise/[id]', params: { id: sos.id, sos: '1' } });
         }}
         style={({ pressed }) => [styles.sos, pressed && { opacity: 0.85 }]}>
         <Ionicons name="pulse" size={22} color={Colors.white} />

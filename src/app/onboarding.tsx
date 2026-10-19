@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Eyebrow, Gap, Heading, Quote, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { useT } from '@/i18n';
+import { useVoice, WELCOME_VOICE } from '@/lib/voice';
 import { useApp } from '@/store/app-state';
 
 const PAGES = [
@@ -32,6 +33,8 @@ export default function Onboarding() {
   const [page, setPage] = useState(0);
   const { finishOnboarding } = useApp();
   const t = useT();
+  const voice = useVoice();
+  const [listening, setListening] = useState(false);
   const p = PAGES[page];
   const last = page === PAGES.length - 1;
 
@@ -67,6 +70,21 @@ export default function Onboarding() {
           <Gap size={Spacing.xl} />
           <Quote>{t('Every path back to yourself begins with one small step.')}</Quote>
           <Text style={styles.signature}>Carina Dorca · {t('Stress & Burnout Coach')}</Text>
+          {voice.has(WELCOME_VOICE) && (
+            <>
+              <Gap size={Spacing.md} />
+              <Button
+                title={listening ? t('Stop the voice') : t('Listen to Carina')}
+                variant="outline"
+                onPress={async () => {
+                  if (listening) return voice.stop();
+                  setListening(true);
+                  await voice.play(WELCOME_VOICE);
+                  setListening(false);
+                }}
+              />
+            </>
+          )}
         </>
       )}
     </Screen>

@@ -14,8 +14,10 @@ import { Body, Button, Gap } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import type { BreathPattern, Exercise } from '@/data/exercises';
 import { useT } from '@/i18n';
+import { BREATH_CUES, EXERCISE_VOICE, SOS_VOICE, TAP_CUES, useVoice } from '@/lib/voice';
 
-type PlayerProps = { exercise: Exercise; onFinish: () => void };
+/** `sos`: opened from "I need calm now": Carina's SOS words instead of the intro, and it starts by itself. */
+type PlayerProps = { exercise: Exercise; onFinish: () => void; sos?: boolean };
 
 const vibrate = (style = Haptics.ImpactFeedbackStyle.Light) => {
   if (Platform.OS !== 'web') Haptics.impactAsync(style).catch(() => {});
@@ -30,12 +32,14 @@ const PHASES: { key: keyof BreathPattern; label: string; scale: number }[] = [
   { key: 'rest', label: 'Rest', scale: 0.6 },
 ];
 
-export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
+export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
   const t = useT();
+  const voice = useVoice();
+  const intro = sos ? SOS_VOICE : EXERCISE_VOICE[exercise.id];
   const pattern = exercise.breath!;
   const rounds = exercise.rounds ?? 5;
   const [scale] = useState(() => new Animated.Value(0.6));
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(!!sos);
   const [label, setLabel] = useState('Ready?');
   const [round, setRound] = useState(0);
 
@@ -46,12 +50,19 @@ export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
 
     const runPhase = (r: number, i: number): void => {
       if (cancelled) return;
-      if (i >= PHASES.length) return r + 1 >= rounds ? finish() : runPhase(r + 1, 0);
+      if (i >= PHASES.length) {
+        if (r + 1 >= rounds) finish();
+        else runPhase(r + 1, 0);
+        return;
+      }
       const phase = PHASES[i];
       const seconds = pattern[phase.key];
       if (seconds <= 0) return runPhase(r, i + 1);
       setRound(r + 1);
       setLabel(phase.label);
+      // Spoken cue; too short phases (the extra sip of the sigh) stay silent.
+      if (i === 0 && r === rounds - 1 && rounds > 1) voice.play(BREATH_CUES.lastRound);
+      else if (seconds >= 2) voice.play(BREATH_CUES[phase.key]);
       // Haptic cue at every phase change, so it also works with eyes closed.
       vibrate(phase.key === 'inhale' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
       Animated.timing(scale, {
@@ -63,15 +74,24 @@ export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
       timers.push(setTimeout(() => runPhase(r, i + 1), seconds * 1000));
     };
 
-    const finish = () => {
-      setRunning(false);
+    const finish = async () => {
       setLabel('Well done');
+      await voice.play(BREATH_CUES.done);
+      if (cancelled) return;
+      setRunning(false);
       onFinish();
     };
 
-    runPhase(0, 0);
+    (async () => {
+      if (voice.has(intro)) {
+        setLabel('Listen…');
+        await voice.play(intro);
+      }
+      if (!cancelled) runPhase(0, 0);
+    })();
     return () => {
       cancelled = true;
+      voice.stop();
       timers.forEach(clearTimeout);
       scale.stopAnimation();
     };
@@ -100,28 +120,66 @@ export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
 const BUTTERFLY_SECONDS = 90;
 const TAP_MS = 900;
 
-export function ButterflyPlayer({ onFinish }: PlayerProps) {
+export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
   const t = useT();
+  const voice = useVoice();
   const [running, setRunning] = useState(false);
+  const [listening, setListening] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>('left');
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (!running) return;
-    const start = Date.now();
-    let left = true;
-    const id = setInterval(() => {
-      left = !left;
-      setSide(left ? 'left' : 'right');
-      vibrate(left ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-      const secs = Math.floor((Date.now() - start) / 1000);
-      setElapsed(secs);
-      if (secs >= BUTTERFLY_SECONDS) {
-        setRunning(false);
-        onFinish();
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const show = (s: 'left' | 'right') => {
+      setSide(s);
+      vibrate(s === 'left' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    const tapping = () => {
+      const start = Date.now();
+      let left = true;
+      let cue = 0;
+      timer = setInterval(() => {
+        left = !left;
+        show(left ? 'left' : 'right');
+        const secs = Math.floor((Date.now() - start) / 1000);
+        setElapsed(secs);
+        if (cue === 0 && secs >= BUTTERFLY_SECONDS / 2) {
+          cue = 1;
+          voice.play(TAP_CUES.keepGoing);
+        } else if (cue === 1 && secs >= BUTTERFLY_SECONDS - 8) {
+          cue = 2;
+          voice.play(TAP_CUES.stop);
+        }
+        if (secs >= BUTTERFLY_SECONDS) {
+          setRunning(false);
+          onFinish();
+        }
+      }, TAP_MS);
+    };
+
+    (async () => {
+      // Carina's intro, then she sets the rhythm: "Left" … "Right" … and the tapping takes over.
+      setListening(true);
+      await voice.play(EXERCISE_VOICE[exercise.id]);
+      setListening(false);
+      for (const s of ['left', 'right'] as const) {
+        if (cancelled || !voice.has(TAP_CUES[s])) break;
+        show(s);
+        await voice.play(TAP_CUES[s]);
       }
-    }, TAP_MS);
-    return () => clearInterval(id);
+      if (!cancelled) tapping();
+    })();
+
+    return () => {
+      cancelled = true;
+      voice.stop();
+      setListening(false);
+      clearInterval(timer);
+    };
   }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -135,7 +193,7 @@ export function ButterflyPlayer({ onFinish }: PlayerProps) {
         </View>
       </View>
       <Text style={styles.counter}>
-        {running ? `${BUTTERFLY_SECONDS - elapsed}s` : t('{n} seconds', { n: BUTTERFLY_SECONDS })}
+        {listening ? t('Listen…') : running ? `${BUTTERFLY_SECONDS - elapsed}s` : t('{n} seconds', { n: BUTTERFLY_SECONDS })}
       </Text>
       <Text style={styles.hint}>{t('Tap the side that lights up. Strong vibration = left, soft = right.')}</Text>
       <Gap size={Spacing.lg} />
@@ -157,8 +215,11 @@ const HUM_GOAL_SECONDS = 60;
 /** dBFS above which we count it as humming. */
 const HUM_THRESHOLD = -35;
 
-export function HumPlayer({ onFinish }: PlayerProps) {
+export function HumPlayer({ exercise, onFinish }: PlayerProps) {
   const t = useT();
+  const voice = useVoice();
+  const [listening, setListening] = useState(false);
+  const skipped = useRef(false);
   const recorder = useAudioRecorder({ ...RecordingPresets.LOW_QUALITY, isMeteringEnabled: true });
   const state = useAudioRecorderState(recorder, 100);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +255,12 @@ export function HumPlayer({ onFinish }: PlayerProps) {
       setError(t('The microphone is needed to give feedback on your hum. Nothing is saved or sent.'));
       return;
     }
+    // Carina's intro first; the microphone only listens once she has finished.
+    setListening(true);
+    skipped.current = false;
+    await voice.play(EXERCISE_VOICE[exercise.id]);
+    setListening(false);
+    if (skipped.current) return;
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
     lastTick.current = Date.now();
@@ -209,7 +276,7 @@ export function HumPlayer({ onFinish }: PlayerProps) {
             { backgroundColor: humming ? Colors.sage : Colors.sageLight, transform: [{ scale: level }] },
           ]}
         />
-        <Text style={styles.phase}>{state.isRecording ? (humming ? 'Voooo…' : t('Hum low')) : t('Ready')}</Text>
+        <Text style={styles.phase}>{listening ? t('Listen…') : state.isRecording ? (humming ? 'Voooo…' : t('Hum low')) : t('Ready')}</Text>
       </View>
       <Text style={styles.counter}>
         {t('{n} / {total} seconds of humming', { n: Math.floor(humMs / 1000), total: HUM_GOAL_SECONDS })}
@@ -218,9 +285,15 @@ export function HumPlayer({ onFinish }: PlayerProps) {
       {error && <Body style={{ color: Colors.danger, textAlign: 'center' }}>{error}</Body>}
       <Gap size={Spacing.lg} />
       <Button
-        title={state.isRecording ? t('Stop') : t('Start humming')}
-        variant={state.isRecording ? 'outline' : 'primary'}
-        onPress={() => (state.isRecording ? recorder.stop() : start().catch((e) => setError(String(e))))}
+        title={state.isRecording || listening ? t('Stop') : t('Start humming')}
+        variant={state.isRecording || listening ? 'outline' : 'primary'}
+        onPress={() => {
+          if (listening) {
+            skipped.current = true;
+            voice.stop();
+          } else if (state.isRecording) recorder.stop();
+          else start().catch((e) => setError(String(e)));
+        }}
       />
     </View>
   );
@@ -230,11 +303,31 @@ export function HumPlayer({ onFinish }: PlayerProps) {
 
 export function GuidedPlayer({ exercise, onFinish }: PlayerProps) {
   const t = useT();
+  const voice = useVoice();
+  const code = EXERCISE_VOICE[exercise.id];
   const [step, setStep] = useState(0);
+  const [listening, setListening] = useState(false);
   const last = step === exercise.steps.length - 1;
+
+  const listen = async () => {
+    if (listening) return voice.stop();
+    setListening(true);
+    await voice.play(code);
+    setListening(false);
+  };
 
   return (
     <View>
+      {voice.has(code) && (
+        <>
+          <Button
+            title={listening ? t('Stop the voice') : t('Listen to Carina')}
+            variant="outline"
+            onPress={listen}
+          />
+          <Gap size={Spacing.md} />
+        </>
+      )}
       <Text style={styles.counter}>
         {t('Step {n} of {total}', { n: step + 1, total: exercise.steps.length })}
       </Text>

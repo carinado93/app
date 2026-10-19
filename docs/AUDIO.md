@@ -84,5 +84,24 @@ recording plus the R03 cue clips; the app times the breathing itself.
 
 ## In the app
 
-Audio files go in `assets/audio/<lang>/<code>.m4a`. The exercise player plays the intro, then the steps
-with the pauses above, and the breathing player plays the R03 cue at each phase change.
+Audio files go in `assets/audio/<lang>/<code>.m4a`. Install cleaned files with
+`python tools/audio/install_voice.py cleaned/*.m4a`: it gives them standard names (`R05.m4a`, `R03-breathe-in.m4a`;
+`r1` → `R01`, the typo `E28` → `R28`) and regenerates `src/data/voice.ts`. Missing recordings are skipped by the app.
+
+Exercise → code: see `EXERCISE_VOICE` in `src/lib/voice.ts` (R05 Physiological Sigh … R30 Sleep Wind-Down,
+same order as `src/data/exercises.ts`). R01 = welcome (Listen button on the first onboarding page),
+R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts by itself).
+
+- Breathing: intro, then the circle with the R03 cue at each phase change (phases under 2 s stay silent),
+  "One more time" at the start of the last round and "Well done" at the end.
+- Butterfly Hug: intro, then "Left" … "Right" to set the rhythm, "Keep tapping slowly" halfway,
+  "Slowly come to a stop" 8 s before the end.
+- Humming: intro, then the microphone starts.
+- Guided: a "Listen to Carina" button plays the recording; the steps still have Next.
+
+## Recording quality notes
+
+The raw files are quiet (speech peaks around −36 dB over −52 dB room noise) and have low rumble.
+The tool high-passes at 70 Hz and adapts the speech threshold per file. Carina's recorder does not beep:
+only high pure tones (> 500 Hz) count as beeps, and a short sound touching the very start or end of a file
+is treated as the record/stop tap.

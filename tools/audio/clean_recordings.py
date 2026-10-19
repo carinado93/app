@@ -58,7 +58,8 @@ TICKS = 3
 def load(path: Path, sr=SR) -> np.ndarray:
     """Decode any audio file to mono float32 with ffmpeg."""
     raw = subprocess.run(
-        ['ffmpeg', '-v', 'error', '-i', str(path), '-ac', '1', '-ar', str(sr), '-f', 'f32le', '-'],
+        # High-pass: removes rumble and DC offset, which otherwise hide quiet words and fake "beeps".
+        ['ffmpeg', '-v', 'error', '-i', str(path), '-af', 'highpass=f=70', '-ac', '1', '-ar', str(sr), '-f', 'f32le', '-'],
         check=True, capture_output=True,
     ).stdout
     return np.frombuffer(raw, dtype=np.float32).copy()
@@ -74,7 +75,8 @@ def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.03):
     """Non-silent stretches as (start, end) seconds. Threshold adapts to the room noise."""
     db = frame_db(x, sr)
     noise = np.percentile(db, 10)
-    thr = max(noise + 12, -50)
+    # Quiet recordings: speech may be only ~15 dB above the room, so stay below the loudest part.
+    thr = max(noise + min(12, 0.4 * (db.max() - noise)), -50)
     loud = db > thr
     segs, start, quiet = [], None, 0
     gap = int(min_silence / FRAME)
@@ -102,7 +104,8 @@ def is_beep(x: np.ndarray, sr=SR) -> bool:
     spec = np.abs(np.fft.rfft(x * np.hanning(len(x)))) ** 2
     peak = int(np.argmax(spec))
     band = spec[max(peak - 3, 0) : peak + 4].sum()
-    return band / (spec.sum() + 1e-12) > 0.5
+    # Her voice sits around 150-450 Hz and sustained vowels look tonal too; a beep is a high pure tone.
+    return peak * sr / len(x) > 500 and band / (spec.sum() + 1e-12) > 0.5
 
 
 def normalise(text: str) -> str:
@@ -239,6 +242,14 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
             if is_beep(x[int(s * SR) : int(e * SR)]):
                 segs.pop(pos)
                 report['beeps_removed'] += 1
+    # Tapping record/stop: a short sound right at the very start or end of the file.
+    length = len(x) / SR
+    for pos in (0, -1):
+        if len(segs) > 1:
+            s, e = segs[pos]
+            if e - s < 0.6 and (s < 0.15 if pos == 0 else e > length - 0.15):
+                segs.pop(pos)
+                report['clicks_removed'] = report.get('clicks_removed', 0) + 1
 
     rec = recognizer_for(lang)
     chunks = []

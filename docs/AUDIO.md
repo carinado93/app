@@ -29,6 +29,11 @@ beeps removed, every retake it cut (with time and the removed text) and the full
 It recognises speech locally with Whisper (sherpa-onnx, model `sherpa-onnx-whisper-small`), see the setup notes
 at the top of the script. Check the report: a retake marked `"sure": false` should be listened to.
 
+## Notes from Carina per recording
+
+- **R23 Heel Drops:** probably an "again" retake around "Let yourself drop softly onto your heels". Check that it was cut.
+  After "Repeat 15–20 times" the pause must be long enough to actually do 15–20 heel drops (about 20 s).
+
 ## Minimum pause after each step (guided exercises)
 
 | Code | Exercise | Pause after each step |
@@ -44,7 +49,7 @@ at the top of the script. Check the report: a retake marked `"sure": false` shou
 | R20 | Tense & Release | 5 s after each "Hold…", then 6 s after each "…release" |
 | R21 | Jaw & Shoulder Release | 6 s |
 | R22 | Panoramic Vision | 8 s |
-| R23 | Heel Drops | 15 s after "Repeat 15–20 times" |
+| R23 | Heel Drops | 20 s after "Repeat 15–20 times" (enough for 15–20 heel drops) |
 | R24 | Gentle Rocking | 10 s |
 | R25 | Worry Container | 10 s |
 | R26 | Safe Place | 12 s |

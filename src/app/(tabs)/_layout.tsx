@@ -38,7 +38,8 @@ export default function TabLayout() {
       <Tabs.Screen name="exercises" options={{ title: 'Exercises', tabBarIcon: icon('leaf-outline') }} />
       <Tabs.Screen name="gym" options={{ title: 'Gym', tabBarIcon: icon('barbell-outline') }} />
       <Tabs.Screen name="triggers" options={{ title: 'Triggers', tabBarIcon: icon('analytics-outline') }} />
-      <Tabs.Screen name="boundaries" options={{ title: 'Boundaries', tabBarIcon: icon('chatbubbles-outline') }} />
+      <Tabs.Screen name="boundaries" options={{ title: 'Practice', tabBarIcon: icon('chatbubbles-outline') }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('person-circle-outline') }} />
     </Tabs>
   );
 }

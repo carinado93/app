@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   meta: { fontFamily: Fonts.sansMedium, color: Colors.muted, fontSize: 13 },
   streakRow: { flexDirection: 'row', gap: Spacing.md },
   streakCard: { flex: 1, alignItems: 'center', padding: Spacing.md },
-  streakNumber: { fontFamily: Fonts.serif, fontSize: 40, color: Colors.sageDark },
+  streakNumber: { fontFamily: Fonts.sansLight, fontSize: 36, color: Colors.sageDark },
   streakLabel: { fontFamily: Fonts.sans, fontSize: 13, color: Colors.text, textAlign: 'center' },
   streakNote: {
     fontFamily: Fonts.sansLight,

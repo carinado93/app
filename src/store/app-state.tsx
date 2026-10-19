@@ -16,6 +16,8 @@ type PersistedState = {
   gymDone: string[];
   triggers: TriggerEntry[];
   onboarded: boolean;
+  /** Hour of the daily reminder, or null when off. */
+  reminderHour: number | null;
 };
 
 const EMPTY: PersistedState = {
@@ -24,6 +26,7 @@ const EMPTY: PersistedState = {
   gymDone: [],
   triggers: [],
   onboarded: false,
+  reminderHour: null,
 };
 
 export const todayKey = (d = new Date()) =>
@@ -62,6 +65,9 @@ type AppState = PersistedState & {
   addTrigger: (entry: Omit<TriggerEntry, 'id' | 'at'>) => void;
   removeTrigger: (id: string) => void;
   finishOnboarding: () => void;
+  setReminderHour: (hour: number | null) => void;
+  /** Deletes all check-ins, steps and triggers on this phone. */
+  resetData: () => void;
   setPremium: (value: boolean) => void;
 };
 
@@ -110,6 +116,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })),
       removeTrigger: (id) => update((s) => ({ ...s, triggers: s.triggers.filter((t) => t.id !== id) })),
       finishOnboarding: () => update((s) => ({ ...s, onboarded: true })),
+      setReminderHour: (hour) => update((s) => ({ ...s, reminderHour: hour })),
+      resetData: () => update((s) => ({ ...EMPTY, onboarded: s.onboarded })),
       setPremium,
     };
   }, [state, loaded, isPremium, update]);

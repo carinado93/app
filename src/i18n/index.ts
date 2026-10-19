@@ -8,13 +8,11 @@ import { useApp } from '@/store/app-state';
 
 import { UI } from './ui';
 
-export type Lang = 'en' | 'de' | 'ro' | 'es';
+export type Lang = 'en' | 'de';
 
 export const LANGUAGES: { id: Lang; label: string; hello: string }[] = [
   { id: 'en', label: 'English', hello: 'Welcome' },
   { id: 'de', label: 'Deutsch', hello: 'Willkommen' },
-  { id: 'ro', label: 'Română', hello: 'Bun venit' },
-  { id: 'es', label: 'Español', hello: 'Te damos la bienvenida' },
 ];
 
 /** The phone's language if we support it, otherwise English. */
@@ -26,7 +24,7 @@ export function deviceLanguage(): Lang {
 export type Vars = Record<string, string | number>;
 
 export function translate(lang: Lang, text: string, vars?: Vars) {
-  const out = (lang === 'en' ? undefined : UI[lang][text]) ?? text;
+  const out = (lang === 'de' ? UI.de[text] : undefined) ?? text;
   return vars ? out.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)) : out;
 }
 
@@ -41,4 +39,4 @@ export function useT() {
 }
 
 /** Locale for dates, e.g. "Mon, 3 Mar". */
-export const LOCALES: Record<Lang, string> = { en: 'en-GB', de: 'de-DE', ro: 'ro-RO', es: 'es-ES' };
+export const LOCALES: Record<Lang, string> = { en: 'en-GB', de: 'de-DE' };

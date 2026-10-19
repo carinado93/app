@@ -93,7 +93,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => raw && setState({ ...EMPTY, ...JSON.parse(raw) }))
+      .then((raw) => {
+        if (!raw) return;
+        const saved = { ...EMPTY, ...JSON.parse(raw) };
+        // Only English and German are offered; anything else asks again.
+        if (saved.language !== 'en' && saved.language !== 'de') saved.language = null;
+        setState(saved);
+      })
       .catch(() => {})
       .finally(() => setLoaded(true));
     initPurchases().then(setPremium);

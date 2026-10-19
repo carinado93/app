@@ -18,14 +18,12 @@ const MODEL = 'claude-opus-5-5';
 const MAX_TURNS = 30;
 const MAX_CHARS = 1500;
 
-const LANGUAGE_NAMES: Record<string, string> = { en: 'English', de: 'German', ro: 'Romanian', es: 'Spanish' };
+const LANGUAGE_NAMES: Record<string, string> = { en: 'English', de: 'German' };
 
 /** Shown when the model declines to continue. */
 const PAUSE_MESSAGE: Record<string, string> = {
   en: "Let's pause this practice here. If things feel heavy right now, please reach out to someone you trust or a local crisis line.",
   de: 'Lass uns diese Übung hier pausieren. Wenn sich gerade alles schwer anfühlt, wende dich bitte an einen Menschen, dem du vertraust, oder an eine Krisenhotline.',
-  ro: 'Hai să facem o pauză aici. Dacă acum totul pare greu, te rog să vorbești cu cineva în care ai încredere sau să suni la o linie de criză.',
-  es: 'Hagamos una pausa aquí. Si ahora todo se siente pesado, habla con alguien de confianza o llama a una línea de crisis.',
 };
 
 const client = new Anthropic();

@@ -51,7 +51,7 @@ export default function ProgramScreen() {
         <View style={[styles.barFill, { width: `${Math.round((doneCount / program.days.length) * 100)}%` }]} />
       </View>
       <Text style={styles.progressText}>
-        {doneCount} of {program.days.length} days
+        {t('{done} of {total} days', { done: doneCount, total: program.days.length })}
       </Text>
       <Gap size={Spacing.lg} />
 

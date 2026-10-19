@@ -11,6 +11,7 @@ import { GYM, type GymLevel } from '@/data/gym';
 import { ARTICLES, type Article } from '@/data/learn';
 import { PROGRAMS, type Program, type ProgramDay } from '@/data/programs';
 
+import { DE } from './content-de';
 import { useLang, type Lang } from './index';
 
 export type ContentTranslation = {
@@ -26,11 +27,8 @@ export type ContentTranslation = {
   quotes?: string[];
 };
 
-/** Filled in per language once the English texts are final. */
-const CONTENT: Record<Exclude<Lang, 'en'>, ContentTranslation> = { de: {}, ro: {}, es: {} };
-
 function forLang(lang: Lang): ContentTranslation {
-  return lang === 'en' ? {} : CONTENT[lang];
+  return lang === 'de' ? DE : {};
 }
 
 export function localize(lang: Lang) {

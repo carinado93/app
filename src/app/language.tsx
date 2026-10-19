@@ -22,7 +22,7 @@ export default function LanguageScreen() {
       <Gap size={Spacing.lg} />
       {/* Shown in every language, because nothing is chosen yet. */}
       <Text style={styles.title}>Choose your language</Text>
-      <Text style={styles.subtitles}>Sprache wählen · Alege limba · Elige tu idioma</Text>
+      <Text style={styles.subtitles}>Sprache wählen</Text>
       <Gap size={Spacing.lg} />
 
       {LANGUAGES.map((l) => {

@@ -9,8 +9,6 @@ const HOTLINES = [
   { country: 'Germany', name: 'TelefonSeelsorge (24/7, free)', number: '0800 111 0 111' },
   { country: 'Austria', name: 'Telefonseelsorge (24/7)', number: '142' },
   { country: 'Switzerland', name: 'Die Dargebotene Hand (24/7)', number: '143' },
-  { country: 'Romania', name: 'Telefonul Sufletului', number: '0800 801 200' },
-  { country: 'Spain', name: 'Línea 024 (24/7, free)', number: '024' },
 ];
 
 export default function Safety() {

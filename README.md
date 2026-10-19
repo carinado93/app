@@ -24,6 +24,8 @@ Built with Expo (React Native), so one codebase works for Android now and iOS la
 Brand colours and fonts (Cormorant Garamond + Jost, cream / sage / lavender) are in `src/constants/theme.ts`.
 All texts (exercises, steps, gym, scenarios) live in `src/data/` and can be edited without touching screens.
 
+**Languages:** English and German, chosen on the first screen and changeable in Profile. Buttons and labels are in `src/i18n/ui.ts`, German content in `src/i18n/content-de.ts` (same ids as `src/data/`). When you change an English text, update the German one too.
+
 ## Run it
 
 ```bash

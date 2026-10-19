@@ -5,7 +5,9 @@ For every input file:
   1. removes the microphone beep at the start and the end,
   2. finds retakes: when she says "again" (or "nochmal" / "noch einmal"), the sentence before it is
      cut out together with the "again", so only the second, clean version stays,
-  3. evens out the loudness (about -16 LUFS), trims to 0.5 s of silence at both ends and fades the edges.
+  3. evens out the loudness (about -16 LUFS), trims to 0.5 s of silence at both ends and fades the edges,
+  4. for recordings in PLANS (e.g. R30, played as one piece without tapping "Next"): stretches the pause
+     after each step to the time the body needs and ends it with a soft tick-tick-tick countdown.
 
 Speech is recognised locally with Whisper (sherpa-onnx), nothing is uploaded anywhere.
 
@@ -33,6 +35,21 @@ import sherpa_onnx
 SR = 16000
 FRAME = 0.02  # analysis frame, seconds
 RETAKE_WORDS = {'again', 'nochmal', 'noch mal', 'noch einmal', 'einmal', 'nochmals'}
+
+# Recordings played as one piece: (start of the sentence in EN, in DE, seconds of pause before it).
+# Every planned pause ends with TICKS soft ticks, one per second, then the next sentence starts.
+PLANS = {
+    'R30': [  # Sleep Wind-Down
+        ("Put today's worries", 'Leg die Sorgen', 10),
+        ('Breathe in for 4 and out', 'Atme 4 Sekunden ein', 15),
+        ('Tense your whole body', 'Spanne deinen ganzen', 65),  # 5 x (4 in + 8 out) and a little air
+        ('and let go completely', 'und lass ganz los', 5),  # the 5-second hold
+        ('Think of three good things', 'Denk an drei gute', 10),
+        ('Let your body get heavy', 'Lass deinen Körper', 20),
+        ('There is nothing more', 'Heute gibt es nichts', 15),
+    ],
+}
+TICKS = 3
 
 
 def load(path: Path, sr=SR) -> np.ndarray:
@@ -129,9 +146,55 @@ def find_retakes(chunks):
     return drop
 
 
+def starts_with(text: str, phrase: str) -> bool:
+    """Whisper writes numbers as words or digits, and "4" may come out as "4-4": compare only the words."""
+    a, b = normalise(phrase).split(), normalise(text).split()
+    return bool(a) and difflib.SequenceMatcher(None, ' '.join(a), ' '.join(b[: len(a)])).ratio() >= 0.7
+
+
+def apply_plan(code: str, lang: str, keep: list, report: dict):
+    """Mark the chunks that start a planned step with the pause before them."""
+    plan = PLANS.get(code)
+    if not plan:
+        return
+    report['planned_pauses'] = []
+    for en, de, pause in plan:
+        phrase = de if lang == 'de' else en
+        hit = next((c for c in keep[1:] if 'pause' not in c and starts_with(c['text'], phrase)), None)
+        if hit:
+            hit['pause'] = pause
+        report['planned_pauses'].append({'before': phrase, 'seconds': pause, 'found': hit is not None})
+
+
+def tick(sr=48000) -> np.ndarray:
+    """A soft wooden tick, about 40 ms."""
+    t = np.arange(int(0.04 * sr)) / sr
+    return ((np.sin(2 * np.pi * 1800 * t) + 0.6 * np.sin(2 * np.pi * 900 * t)) * np.exp(-t / 0.006)).astype(np.float32)
+
+
+def countdown_pause(seconds: float, level: float, sr=48000) -> np.ndarray:
+    """Silence of the given length whose last seconds hold the tick countdown (last tick 1 s before speech)."""
+    out = np.zeros(int(seconds * sr), dtype=np.float32)
+    tk = tick(sr) * level / 1.6
+    for k in range(1, TICKS + 1):
+        at = len(out) - k * sr
+        if at >= 0:
+            out[at : at + len(tk)] += tk
+    return out
+
+
 def loudnorm(inp: Path, out: Path):
+    """
+    About -16 LUFS with one fixed gain for the whole file, so quiet parts (pauses, ticks) are not pumped up
+    (ffmpeg's loudnorm does that whenever peaks are high), and a limiter that only catches the loudest peaks.
+    """
+    log = subprocess.run(
+        ['ffmpeg', '-hide_banner', '-i', str(inp), '-af', 'loudnorm=I=-16:TP=-1.5:print_format=json', '-f', 'null', '-'],
+        check=True, capture_output=True, text=True,
+    ).stderr
+    gain = -16 - float(json.loads(log[log.rindex('{') : log.rindex('}') + 1])['input_i'])
     subprocess.run(
-        ['ffmpeg', '-v', 'error', '-y', '-i', str(inp), '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11',
+        ['ffmpeg', '-v', 'error', '-y', '-i', str(inp), '-af', f'volume={gain:.2f}dB,alimiter=limit=0.84:level=false',
          '-ar', '48000', '-ac', '1', '-c:a', 'aac', '-b:a', '128k', str(out)],
         check=True,
     )
@@ -178,15 +241,23 @@ def process(path: Path, out_dir: Path, recognizer_for) -> dict:
             })
     keep = [c for i, c in enumerate(chunks) if i not in drop]
     report['transcript'] = [c['text'] for c in keep]
+    code = re.match(r'R\d+', path.stem.upper())
+    apply_plan(code.group(0) if code else '', lang, keep, report)
 
     # Rebuild: kept chunks with their natural pauses (pauses around removed parts are closed up).
     hi = load(path, 48000)
+    # Ticks sit well below the voice so they guide without waking anyone up.
+    tick_level = 0.25 * max((np.abs(hi[int(c['start'] * 48000) : int(c['end'] * 48000)]).max(initial=0) for c in keep), default=0)
     pieces, prev_end = [], None
     for c in keep:
         s, e = c['start'], c['end']
         if prev_end is not None:
             gap = s - prev_end if s > prev_end else 0.6
-            pieces.append(np.zeros(int(min(max(gap, 0.4), 4.0) * 48000), dtype=np.float32))
+            gap = min(max(gap, 0.4), 4.0)
+            if 'pause' in c:
+                pieces.append(countdown_pause(max(gap, c['pause']), tick_level))
+            else:
+                pieces.append(np.zeros(int(gap * 48000), dtype=np.float32))
         pieces.append(hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.12) * 48000)])
         prev_end = e
     pad = np.zeros(int(0.5 * 48000), dtype=np.float32)

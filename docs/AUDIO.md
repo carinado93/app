@@ -24,7 +24,7 @@ The faulty first try and the "again" are removed; only the second version stays.
 
 ## Tool
 
-`tools/audio/clean_recordings.py` does steps 1, 2, 3 (partly) and 5 automatically and prints a report per file:
+`tools/audio/clean_recordings.py` does steps 1, 2, 3 (fully for R30, partly for the rest) and 5 automatically and prints a report per file:
 beeps removed, every retake it cut (with time and the removed text) and the full transcript of what stays.
 It recognises speech locally with Whisper (sherpa-onnx, model `sherpa-onnx-whisper-small`), see the setup notes
 at the top of the script. Check the report: a retake marked `"sure": false` should be listened to.
@@ -58,7 +58,26 @@ at the top of the script. Check the report: a retake marked `"sure": false` shou
 | R27 | Three Good Things | 10 s |
 | R28 | Wake-Up Stretch | 8 s |
 | R29 | Eye Palming | 5 slow breaths (~25 s) after "Enjoy the darkness" |
-| R30 | Sleep Wind-Down | 10 s; ~60 s after "Breathe in for 4 and out for 8. Five times." |
+| R30 | Sleep Wind-Down | see below: one piece with countdown ticks |
+
+## R30 Sleep Wind-Down: one piece, no tapping
+
+Carina's wish: in bed nobody should have to pick up the phone to tap "Next". R30 is one continuous track
+(also in the app: when voice audio is added, it plays from start to end without a Next button).
+Each pause is as long as the step needs and ends with a soft **tick, tick, tick** countdown
+(one tick per second, the last one 1 s before she speaks again). The tool does this automatically
+from `PLANS` in `tools/audio/clean_recordings.py` and lists in the report whether each step was found
+(`"found": false` → check that spot by ear).
+
+| Pause before… | Length | Why |
+|---|---|---|
+| "Put today's worries…" | 10 s | settle in |
+| "Breathe in for 4 and out for 8. Five times." | 15 s | close the container |
+| "Tense your whole body…" | 65 s | 5 × (4 in + 8 out) and a little air |
+| "…and let go completely." | 5 s | the 5-second hold |
+| "Think of three good things…" | 10 s | let go |
+| "Let your body get heavy…" | 20 s | three good things |
+| "There is nothing more to do today…" | 15 s | heaviness |
 
 Breathing exercises (R05 Sigh, R08 Box, R09 4-7-8, R13 Wake-Up Breath, R18 Coherent) use only the intro
 recording plus the R03 cue clips; the app times the breathing itself.

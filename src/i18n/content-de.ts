@@ -61,8 +61,8 @@ export const DE: ContentTranslation = {
     },
     shake: {
       title: 'Abschütteln',
-      summary: 'Schüttle Hände, Arme und Beine aus, so wie Tiere es nach einer Gefahr tun.',
-      why: 'Tiere schütteln sich nach einer Bedrohung, um Stressenergie loszuwerden. Unser Körper kann das auch, und es bringt einen tauben Körper wieder ins Leben.',
+      summary: 'Schüttle Hände, Arme und Beine aus, so wie du nach dem Schwimmen Wasser abschüttelst. Lass die Anspannung abfallen.',
+      why: 'Schütteln ist einer der natürlichen Wege deines Körpers, aufgestaute Stressenergie loszulassen. Es lockert verspannte Muskeln und bringt einen müden, tauben Körper wieder ins Leben.',
       steps: [
         'Steh auf. Fang an, deine Hände locker auszuschütteln.',
         'Lass das Schütteln in Arme und Schultern wandern.',

@@ -154,8 +154,8 @@ export const EXERCISES: Exercise[] = [
     situations: ['argument', 'work', 'scrolling'],
     free: false,
     invisible: false,
-    summary: 'Shake your hands, arms and legs like animals do after danger.',
-    why: 'Animals shake after a threat to release stress energy. Our bodies can do the same, and it brings a numb body back to life.',
+    summary: 'Shake out your hands, arms and legs, like shaking off water after a swim. Let the tension fall away.',
+    why: 'Shaking is one of the body’s natural ways to release built-up stress energy. It loosens tight muscles and brings a tired, numb body back to life.',
     steps: [
       'Stand up. Start shaking your hands loosely.',
       'Let the shaking move into your arms and shoulders.',

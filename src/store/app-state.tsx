@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Weather } from '@/data/exercises';
 import type { ProgramProgress } from '@/data/programs';
 import type { TriggerEntry } from '@/data/triggers';
+import type { Lang } from '@/i18n';
 import { initPurchases, onPremiumChange } from '@/lib/purchases';
 
 const STORAGE_KEY = 'naao-state-v1';
@@ -22,6 +23,8 @@ type PersistedState = {
   programs: Record<string, ProgramProgress>;
   /** The program shown on the Today screen. */
   activeProgram: string | null;
+  /** Chosen on the very first screen; null until then. */
+  language: Lang | null;
 };
 
 const EMPTY: PersistedState = {
@@ -33,6 +36,7 @@ const EMPTY: PersistedState = {
   reminderHour: null,
   programs: {},
   activeProgram: null,
+  language: null,
 };
 
 export const todayKey = (d = new Date()) =>
@@ -72,6 +76,7 @@ type AppState = PersistedState & {
   removeTrigger: (id: string) => void;
   finishOnboarding: () => void;
   setReminderHour: (hour: number | null) => void;
+  setLanguage: (lang: Lang) => void;
   startProgram: (id: string) => void;
   completeProgramDay: (id: string, day: number, note: string) => void;
   /** Deletes all check-ins, steps and triggers on this phone. */
@@ -125,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeTrigger: (id) => update((s) => ({ ...s, triggers: s.triggers.filter((t) => t.id !== id) })),
       finishOnboarding: () => update((s) => ({ ...s, onboarded: true })),
       setReminderHour: (hour) => update((s) => ({ ...s, reminderHour: hour })),
+      setLanguage: (lang) => update((s) => ({ ...s, language: lang })),
       startProgram: (id) =>
         update((s) => ({
           ...s,
@@ -144,7 +150,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             stepsDone: s.stepsDone.includes(today) ? s.stepsDone : [...s.stepsDone, today],
           };
         }),
-      resetData: () => update((s) => ({ ...EMPTY, onboarded: s.onboarded })),
+      resetData: () => update((s) => ({ ...EMPTY, onboarded: s.onboarded, language: s.language })),
       setPremium,
     };
   }, [state, loaded, isPremium, update]);

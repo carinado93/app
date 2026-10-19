@@ -9,6 +9,7 @@ import { LINKS } from '@/constants/links';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { restore } from '@/lib/purchases';
 import { remindersSupported, setDailyReminder } from '@/lib/reminders';
+import { LANGUAGES, useLang, useT } from '@/i18n';
 import { gentleStreak, useApp } from '@/store/app-state';
 
 const REMINDER_HOURS = [
@@ -20,36 +21,38 @@ const REMINDER_HOURS = [
 
 export default function Profile() {
   const app = useApp();
+  const t = useT();
+  const lang = useLang();
   const [reminderError, setReminderError] = useState<string | null>(null);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const chooseReminder = async (hour: number | null) => {
     setReminderError(null);
-    const ok = await setDailyReminder(hour).catch(() => false);
+    const ok = await setDailyReminder(hour, lang).catch(() => false);
     if (ok) app.setReminderHour(hour);
-    else setReminderError('Notifications are turned off for this app. You can allow them in your phone settings.');
+    else setReminderError(t('Notifications are turned off for this app. You can allow them in your phone settings.'));
   };
 
   const onRestore = async () => {
     setRestoreMessage(null);
     const ok = await restore().catch(() => false);
     if (ok) app.setPremium(true);
-    setRestoreMessage(ok ? 'Premium restored.' : 'No active subscription found for this Google account.');
+    setRestoreMessage(ok ? t('Premium restored.') : t('No active subscription found for this Google account.'));
   };
 
   return (
     <Screen>
-      <Eyebrow>Your space</Eyebrow>
-      <Heading accent="& settings.">Profile</Heading>
+      <Eyebrow>{t('Your space')}</Eyebrow>
+      <Heading accent={t('& settings.')}>{t('Profile')}</Heading>
       <Gap size={Spacing.lg} />
 
       {/* Membership */}
       <Card>
         <View style={styles.memberRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>MEMBERSHIP</Text>
-            <Text style={styles.memberTitle}>{app.isPremium ? 'Premium' : 'Free'}</Text>
+            <Text style={styles.label}>{t('Membership').toUpperCase()}</Text>
+            <Text style={styles.memberTitle}>{app.isPremium ? t('Premium') : t('Free')}</Text>
           </View>
           <Ionicons
             name={app.isPremium ? 'star' : 'star-outline'}
@@ -60,47 +63,47 @@ export default function Profile() {
         <Gap size={Spacing.sm} />
         {app.isPremium ? (
           <>
-            <Body>Everything is unlocked. Thank you for supporting this work.</Body>
+            <Body>{t('Everything is unlocked. Thank you for supporting this work.')}</Body>
             <Gap />
             <Button
-              title="Manage subscription"
+              title={t('Manage subscription')}
               variant="outline"
               onPress={() => Linking.openURL(LINKS.manageSubscription)}
             />
-            <Text style={styles.note}>Change or cancel your plan in Google Play.</Text>
+            <Text style={styles.note}>{t('Change or cancel your plan in Google Play.')}</Text>
           </>
         ) : (
           <>
-            <Body>Unlock all exercises, the full Gym, trigger insights and boundary practice.</Body>
+            <Body>{t('Unlock all exercises, the full Gym, trigger insights and boundary practice.')}</Body>
             <Gap />
-            <Button title="Try Premium 7 days free" onPress={() => router.push('/paywall')} />
+            <Button title={t('Try Premium 7 days free')} onPress={() => router.push('/paywall')} />
           </>
         )}
         <Pressable onPress={onRestore} style={styles.restore}>
-          <Text style={styles.restoreText}>Restore purchases</Text>
+          <Text style={styles.restoreText}>{t('Restore purchases')}</Text>
         </Pressable>
         {restoreMessage && <Text style={styles.note}>{restoreMessage}</Text>}
       </Card>
       <Gap size={Spacing.lg} />
 
       {/* Progress */}
-      <Eyebrow>Your journey</Eyebrow>
+      <Eyebrow>{t('Your journey')}</Eyebrow>
       <View style={styles.stats}>
-        <Stat value={gentleStreak(app.stepsDone)} label="gentle streak" />
-        <Stat value={app.checkIns.length} label="check-ins" />
-        <Stat value={app.gymDone.length} label="gym sessions" />
-        <Stat value={app.triggers.length} label="triggers logged" />
+        <Stat value={gentleStreak(app.stepsDone)} label={t('gentle streak')} />
+        <Stat value={app.checkIns.length} label={t('check-ins')} />
+        <Stat value={app.gymDone.length} label={t('gym sessions')} />
+        <Stat value={app.triggers.length} label={t('triggers logged')} />
       </View>
       <Gap size={Spacing.lg} />
 
       {/* Reminder */}
-      <Eyebrow>Daily reminder</Eyebrow>
+      <Eyebrow>{t('Daily reminder')}</Eyebrow>
       {remindersSupported ? (
         <Card>
-          <Body>A gentle nudge once a day for your check-in and small step.</Body>
+          <Body>{t('A gentle nudge once a day for your check-in and small step.')}</Body>
           <Gap size={Spacing.md} />
           <View style={styles.chips}>
-            <Chip label="Off" active={app.reminderHour === null} onPress={() => chooseReminder(null)} />
+            <Chip label={t('Off')} active={app.reminderHour === null} onPress={() => chooseReminder(null)} />
             {REMINDER_HOURS.map((r) => (
               <Chip
                 key={r.hour}
@@ -113,41 +116,51 @@ export default function Profile() {
           {reminderError && <Text style={[styles.note, { color: Colors.danger }]}>{reminderError}</Text>}
         </Card>
       ) : (
-        <Body>Reminders are available in the phone app.</Body>
+        <Body>{t('Reminders are available in the phone app.')}</Body>
       )}
       <Gap size={Spacing.lg} />
 
-      {/* Links */}
-      <Eyebrow>Support</Eyebrow>
+      <Eyebrow>{t('Language')}</Eyebrow>
       <Card style={styles.list}>
-        <Row icon="heart-outline" label="Crisis help & safety" onPress={() => router.push('/safety')} />
-        <Row icon="calendar-outline" label="Book a free call with Carina" onPress={() => Linking.openURL(LINKS.discoveryCall)} />
+        <Row
+          icon="language-outline"
+          label={LANGUAGES.find((l) => l.id === lang)!.label}
+          onPress={() => router.push({ pathname: '/language', params: { from: 'profile' } })}
+          last
+        />
+      </Card>
+      <Gap size={Spacing.lg} />
+
+      {/* Links */}
+      <Eyebrow>{t('Support')}</Eyebrow>
+      <Card style={styles.list}>
+        <Row icon="heart-outline" label={t('Crisis help & safety')} onPress={() => router.push('/safety')} />
+        <Row icon="calendar-outline" label={t('Book a free call with Carina')} onPress={() => Linking.openURL(LINKS.discoveryCall)} />
         <Row icon="globe-outline" label="carinadorca.com" onPress={() => Linking.openURL(LINKS.website)} last />
       </Card>
       <Gap size={Spacing.lg} />
 
-      <Eyebrow>Legal</Eyebrow>
+      <Eyebrow>{t('Legal')}</Eyebrow>
       <Card style={styles.list}>
-        <Row icon="shield-checkmark-outline" label="Privacy policy" onPress={() => Linking.openURL(LINKS.privacy)} />
-        <Row icon="document-text-outline" label="Terms of use" onPress={() => Linking.openURL(LINKS.terms)} />
-        <Row icon="information-circle-outline" label="Imprint" onPress={() => Linking.openURL(LINKS.imprint)} last />
+        <Row icon="shield-checkmark-outline" label={t('Privacy policy')} onPress={() => Linking.openURL(LINKS.privacy)} />
+        <Row icon="document-text-outline" label={t('Terms of use')} onPress={() => Linking.openURL(LINKS.terms)} />
+        <Row icon="information-circle-outline" label={t('Imprint')} onPress={() => Linking.openURL(LINKS.imprint)} last />
       </Card>
       <Gap size={Spacing.lg} />
 
       {/* Data */}
-      <Eyebrow>Your data</Eyebrow>
+      <Eyebrow>{t('Your data')}</Eyebrow>
       <Body>
-        Your check-ins, steps and triggers are stored only on this phone. There is no account and nothing is
-        shared.
+        {t('Your check-ins, steps and triggers are stored only on this phone. There is no account and nothing is shared.')}
       </Body>
       <Gap />
       {confirmDelete ? (
         <Card>
-          <Text style={styles.deleteTitle}>Delete everything on this phone?</Text>
-          <Body>This removes your check-ins, steps, gym progress and triggers. It cannot be undone.</Body>
+          <Text style={styles.deleteTitle}>{t('Delete everything on this phone?')}</Text>
+          <Body>{t('This removes your check-ins, steps, gym progress and triggers. It cannot be undone.')}</Body>
           <Gap />
           <Button
-            title="Yes, delete my data"
+            title={t('Yes, delete my data')}
             onPress={() => {
               app.resetData();
               setDailyReminder(null).catch(() => {});
@@ -155,17 +168,17 @@ export default function Profile() {
             }}
           />
           <Gap size={Spacing.sm} />
-          <Button title="Cancel" variant="outline" onPress={() => setConfirmDelete(false)} />
+          <Button title={t('Cancel')} variant="outline" onPress={() => setConfirmDelete(false)} />
         </Card>
       ) : (
         <Pressable onPress={() => setConfirmDelete(true)}>
-          <Text style={styles.deleteLink}>Delete my data</Text>
+          <Text style={styles.deleteLink}>{t('Delete my data')}</Text>
         </Pressable>
       )}
 
       <Gap size={Spacing.xl} />
       <Text style={styles.version}>
-        Not All At Once {Application.nativeApplicationVersion ?? ''} · Carina Dorca, Stress & Burnout Coach
+        Not All At Once {Application.nativeApplicationVersion ?? ''} · Carina Dorca, {t('Stress & Burnout Coach')}
       </Text>
     </Screen>
   );

@@ -4,30 +4,32 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Body, Button, Card, Eyebrow, Gap, Heading, Quote, Screen } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { getExercise } from '@/data/exercises';
-import { getArticle } from '@/data/learn';
+import { useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { useApp } from '@/store/app-state';
 
 export default function ArticleScreen() {
   const { id, unlocked } = useLocalSearchParams<{ id: string; unlocked?: string }>();
-  const article = getArticle(id);
+  const t = useT();
+  const content = useContent();
+  const article = content.article(id);
   const { isPremium } = useApp();
 
   if (!article) {
     return (
       <Screen>
-        <Body>Article not found.</Body>
+        <Body>{t('Article not found.')}</Body>
       </Screen>
     );
   }
 
   // Articles inside a program day are always open.
   const locked = !article.free && !isPremium && unlocked !== '1';
-  const exercise = article.exerciseId ? getExercise(article.exerciseId) : undefined;
+  const exercise = article.exerciseId ? content.exercise(article.exerciseId) : undefined;
 
   return (
     <Screen>
-      <Eyebrow>{`Learn · ${article.minutes} min`}</Eyebrow>
+      <Eyebrow>{`${t('Learn')} · ${article.minutes} min`}</Eyebrow>
       <Heading size={32}>{article.title}</Heading>
       <Gap />
       <Text style={styles.intro}>{article.intro}</Text>
@@ -37,9 +39,9 @@ export default function ArticleScreen() {
         <Card style={{ alignItems: 'center' }}>
           <Ionicons name="lock-closed-outline" size={30} color={Colors.lavender} />
           <Gap size={Spacing.sm} />
-          <Body style={{ textAlign: 'center' }}>Read the full article and all other Learn articles with Premium.</Body>
+          <Body style={{ textAlign: 'center' }}>{t('Read the full article and all other Learn articles with Premium.')}</Body>
           <Gap />
-          <Button title="Try 7 days free" onPress={() => router.push('/paywall')} />
+          <Button title={t('Try 7 days free')} onPress={() => router.push('/paywall')} />
         </Card>
       ) : (
         <>
@@ -54,7 +56,7 @@ export default function ArticleScreen() {
           {exercise && (
             <>
               <Gap size={Spacing.lg} />
-              <Eyebrow>Try it now</Eyebrow>
+              <Eyebrow>{t('Try it now')}</Eyebrow>
               <Button
                 title={`${exercise.title} · ${exercise.minutes} min`}
                 onPress={() =>

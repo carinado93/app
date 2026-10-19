@@ -5,32 +5,36 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Body, Card, Eyebrow, Gap, Heading, PremiumBadge, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { EXERCISES, SITUATIONS, type Situation } from '@/data/exercises';
+import { SITUATIONS, type Situation } from '@/data/exercises';
+import { useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { useApp } from '@/store/app-state';
 
 export default function Exercises() {
   const { isPremium } = useApp();
+  const t = useT();
+  const { exercises } = useContent();
   const [situation, setSituation] = useState<Situation | null>(null);
   const [invisibleOnly, setInvisibleOnly] = useState(false);
 
-  const list = EXERCISES.filter(
+  const list = exercises.filter(
     (e) => (!situation || e.situations.includes(situation)) && (!invisibleOnly || e.invisible),
   );
 
   return (
     <Screen>
-      <Eyebrow>Body exercises</Eyebrow>
-      <Heading accent="you are.">Reset, wherever</Heading>
+      <Eyebrow>{t('Body exercises')}</Eyebrow>
+      <Heading accent={t('you are.')}>{t('Reset, wherever')}</Heading>
       <Gap />
-      <Body>Choose your moment. Every exercise takes 1–3 minutes.</Body>
+      <Body>{t('Choose your moment. Every exercise takes 1–3 minutes.')}</Body>
       <Gap />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip label="All" active={!situation} onPress={() => setSituation(null)} />
+        <Chip label={t('All')} active={!situation} onPress={() => setSituation(null)} />
         {SITUATIONS.map((s) => (
           <Chip
             key={s.id}
-            label={s.label}
+            label={t(s.label)}
             active={situation === s.id}
             onPress={() => setSituation(situation === s.id ? null : s.id)}
           />
@@ -44,7 +48,7 @@ export default function Exercises() {
           color={invisibleOnly ? Colors.sageDark : Colors.muted}
         />
         <Text style={[styles.toggleText, invisibleOnly && { color: Colors.sageDark }]}>
-          Invisible mode: only exercises nobody will notice
+          {t('Invisible mode: only exercises nobody will notice')}
         </Text>
       </Pressable>
       <Gap />
@@ -56,16 +60,16 @@ export default function Exercises() {
           onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: e.id } })}>
           <View style={styles.row}>
             <Text style={styles.title}>{e.title}</Text>
-            {!e.free && !isPremium ? <PremiumBadge /> : <Text style={styles.free}>{e.free ? 'FREE' : ''}</Text>}
+            {!e.free && !isPremium ? <PremiumBadge /> : <Text style={styles.free}>{e.free ? t('FREE') : ''}</Text>}
           </View>
           <Body>{e.summary}</Body>
           <Gap size={Spacing.sm} />
           <Text style={styles.meta}>
-            {e.minutes} min{e.invisible ? ' · invisible' : ''}
+            {e.minutes} min{e.invisible ? ` · ${t('invisible')}` : ''}
           </Text>
         </Card>
       ))}
-      {list.length === 0 && <Body>No exercise matches. Try another moment.</Body>}
+      {list.length === 0 && <Body>{t('No exercise matches. Try another moment.')}</Body>}
     </Screen>
   );
 }

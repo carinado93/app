@@ -6,15 +6,15 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 
 import { Body, Button, Card, Eyebrow, Gap, Heading, Screen, usePremiumGate } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { getScenario } from '@/data/boundaries';
-import { getExercise } from '@/data/exercises';
-import { getArticle } from '@/data/learn';
-import { getProgram, nextProgramDay, type ProgramDay } from '@/data/programs';
+import { nextProgramDay, type ProgramDay } from '@/data/programs';
+import { useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { todayKey, useApp } from '@/store/app-state';
 
 export default function ProgramScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const program = getProgram(id);
+  const t = useT();
+  const program = useContent().program(id);
   const { programs, startProgram, completeProgramDay, isPremium } = useApp();
   const gate = usePremiumGate();
   const [note, setNote] = useState('');
@@ -23,7 +23,7 @@ export default function ProgramScreen() {
   if (!program) {
     return (
       <Screen>
-        <Body>Program not found.</Body>
+        <Body>{t('Program not found.')}</Body>
       </Screen>
     );
   }
@@ -42,7 +42,7 @@ export default function ProgramScreen() {
 
   return (
     <Screen>
-      <Eyebrow>{`Program · ${program.days.length} days`}</Eyebrow>
+      <Eyebrow>{`${t('Program')} · ${t('{n} days', { n: program.days.length })}`}</Eyebrow>
       <Heading accent={program.accent}>{program.title}</Heading>
       <Gap size={Spacing.sm} />
       <Body>{program.summary}</Body>
@@ -57,43 +57,43 @@ export default function ProgramScreen() {
 
       {!started ? (
         <Button
-          title={locked ? 'Unlock with Premium' : 'Start program'}
+          title={locked ? t('Unlock with Premium') : t('Start program')}
           onPress={() => (program.free ? startProgram(program.id) : gate(() => startProgram(program.id)))}
         />
       ) : finished ? (
         <Card style={{ alignItems: 'center' }}>
           <Text style={styles.bigEmoji}>🌿</Text>
-          <Text style={styles.cardTitle}>You finished the program.</Text>
-          <Body style={{ textAlign: 'center' }}>One small step at a time. Not all at once. Be proud of yourself.</Body>
+          <Text style={styles.cardTitle}>{t('You finished the program.')}</Text>
+          <Body style={{ textAlign: 'center' }}>{t('One small step at a time. Not all at once. Be proud of yourself.')}</Body>
         </Card>
       ) : availableToday ? (
         <DayCard day={day} content={program.days[day - 1]}>
-          <Text style={styles.label}>REFLECTION</Text>
+          <Text style={styles.label}>{t('Reflection').toUpperCase()}</Text>
           <Text style={styles.reflection}>{program.days[day - 1].reflection}</Text>
           <TextInput
             value={note}
             onChangeText={setNote}
-            placeholder="Write a few words (optional, stays on your phone)"
+            placeholder={t('Write a few words (optional, stays on your phone)')}
             placeholderTextColor={Colors.muted}
             style={styles.input}
             multiline
           />
           <Gap />
-          <Button title={`Complete day ${day}`} onPress={complete} />
+          <Button title={t('Complete day {n}', { n: day })} onPress={complete} />
         </DayCard>
       ) : (
         <Card style={{ alignItems: 'center' }}>
           <Ionicons name="moon-outline" size={30} color={Colors.lavender} />
           <Gap size={Spacing.sm} />
-          <Text style={styles.cardTitle}>Day {day} opens tomorrow.</Text>
+          <Text style={styles.cardTitle}>{t('Day {n} opens tomorrow.', { n: day })}</Text>
           <Body style={{ textAlign: 'center' }}>
-            Not all at once. Let today’s step settle. See you tomorrow.
+            {t('Not all at once. Let today’s step settle. See you tomorrow.')}
           </Body>
         </Card>
       )}
 
       <Gap size={Spacing.xl} />
-      <Eyebrow>All days</Eyebrow>
+      <Eyebrow>{t('All days')}</Eyebrow>
       {program.days.map((d, i) => {
         const n = i + 1;
         const done = progress?.days[n];
@@ -110,14 +110,14 @@ export default function ProgramScreen() {
                 color={done ? Colors.sage : Colors.creamDark}
               />
               <Text style={[styles.dayTitle, !done && n !== day && { color: Colors.muted }]}>
-                Day {n} · {d.title}
+                {t('Day {n}', { n })} · {d.title}
               </Text>
               {done?.note ? <Ionicons name="create-outline" size={16} color={Colors.lavender} /> : null}
             </Pressable>
             {openDay === n && done && (
               <View style={styles.pastNote}>
                 <Text style={styles.reflection}>{d.reflection}</Text>
-                <Body>{done.note ?? 'No reflection written.'}</Body>
+                <Body>{done.note ?? t('No reflection written.')}</Body>
               </View>
             )}
           </View>
@@ -128,20 +128,22 @@ export default function ProgramScreen() {
 }
 
 function DayCard({ day, content, children }: { day: number; content: ProgramDay; children: React.ReactNode }) {
-  const exercise = content.exerciseId ? getExercise(content.exerciseId) : undefined;
-  const article = content.articleId ? getArticle(content.articleId) : undefined;
-  const scenario = content.scenarioId ? getScenario(content.scenarioId) : undefined;
+  const t = useT();
+  const all = useContent();
+  const exercise = content.exerciseId ? all.exercise(content.exerciseId) : undefined;
+  const article = content.articleId ? all.article(content.articleId) : undefined;
+  const scenario = content.scenarioId ? all.scenario(content.scenarioId) : undefined;
 
   return (
     <Card style={styles.dayCard}>
-      <Eyebrow>{`Today · Day ${day}`}</Eyebrow>
+      <Eyebrow>{`${t('Today')} · ${t('Day {n}', { n: day })}`}</Eyebrow>
       <Text style={styles.cardTitle}>{content.title}</Text>
       <Body>{content.intro}</Body>
       <Gap />
       {article && (
         <Link
           icon="book-outline"
-          label={`Read: ${article.title}`}
+          label={`${t('Read')}: ${article.title}`}
           meta={`${article.minutes} min`}
           onPress={() => router.push({ pathname: '/learn/[id]', params: { id: article.id, unlocked: '1' } })}
         />
@@ -149,7 +151,7 @@ function DayCard({ day, content, children }: { day: number; content: ProgramDay;
       {exercise && (
         <Link
           icon="leaf-outline"
-          label={`Exercise: ${exercise.title}`}
+          label={`${t('Exercise')}: ${exercise.title}`}
           meta={`${exercise.minutes} min`}
           onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: exercise.id, unlocked: '1' } })}
         />
@@ -157,12 +159,12 @@ function DayCard({ day, content, children }: { day: number; content: ProgramDay;
       {scenario && (
         <Link
           icon="chatbubbles-outline"
-          label={`Practise: ${scenario.title}`}
+          label={`${t('Practise')}: ${scenario.title}`}
           onPress={() => router.push({ pathname: '/roleplay/[id]', params: { id: scenario.id } })}
         />
       )}
       <Gap size={Spacing.sm} />
-      <Text style={styles.label}>YOUR SMALL STEP</Text>
+      <Text style={styles.label}>{t('Your small step').toUpperCase()}</Text>
       <Text style={styles.task}>{content.task}</Text>
       <Gap />
       {children}

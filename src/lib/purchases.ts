@@ -47,15 +47,17 @@ export function onPremiumChange(listener: (premium: boolean) => void) {
 export type Plan = {
   id: 'monthly' | 'annual';
   title: string;
+  /** Price as Google Play formats it, e.g. "€4.99". */
   price: string;
+  period: 'month' | 'year';
   note: string;
   pkg?: PurchasesPackage;
 };
 
 /** Fallback prices shown in preview mode; real prices come from Google Play. */
 const PREVIEW_PLANS: Plan[] = [
-  { id: 'annual', title: 'Yearly', price: '€50 / year', note: '7 days free · save 16%' },
-  { id: 'monthly', title: 'Monthly', price: '€4.99 / month', note: '7 days free' },
+  { id: 'annual', title: 'Yearly', price: '€50', period: 'year', note: '7 days free · save 16%' },
+  { id: 'monthly', title: 'Monthly', price: '€4.99', period: 'month', note: '7 days free' },
 ];
 
 export async function getPlans(): Promise<Plan[]> {
@@ -67,7 +69,8 @@ export async function getPlans(): Promise<Plan[]> {
       plans.push({
         id: 'annual',
         title: 'Yearly',
-        price: `${offering.annual.product.priceString} / year`,
+        price: offering.annual.product.priceString,
+        period: 'year',
         note: '7 days free · best value',
         pkg: offering.annual,
       });
@@ -75,7 +78,8 @@ export async function getPlans(): Promise<Plan[]> {
       plans.push({
         id: 'monthly',
         title: 'Monthly',
-        price: `${offering.monthly.product.priceString} / month`,
+        price: offering.monthly.product.priceString,
+        period: 'month',
         note: '7 days free',
         pkg: offering.monthly,
       });

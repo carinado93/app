@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Eyebrow, Gap, Heading, Quote, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 const PAGES = [
@@ -30,6 +31,7 @@ const PAGES = [
 export default function Onboarding() {
   const [page, setPage] = useState(0);
   const { finishOnboarding } = useApp();
+  const t = useT();
   const p = PAGES[page];
   const last = page === PAGES.length - 1;
 
@@ -39,12 +41,12 @@ export default function Onboarding() {
         <Text style={styles.archEmoji}>{['🌿', '🪷', '🤍'][page]}</Text>
       </View>
       <Gap size={Spacing.xl} />
-      <Eyebrow>{p.eyebrow}</Eyebrow>
-      <Heading accent={p.accent} size={40}>
-        {p.title}
+      <Eyebrow>{t(p.eyebrow)}</Eyebrow>
+      <Heading accent={t(p.accent)} size={40}>
+        {t(p.title)}
       </Heading>
       <Gap />
-      <Body>{p.body}</Body>
+      <Body>{t(p.body)}</Body>
       <Gap size={Spacing.xl} />
       <View style={styles.dots}>
         {PAGES.map((_, i) => (
@@ -53,7 +55,7 @@ export default function Onboarding() {
       </View>
       <Gap size={Spacing.lg} />
       <Button
-        title={last ? 'Start' : 'Next'}
+        title={last ? t('Start') : t('Next')}
         onPress={() => {
           if (!last) return setPage(page + 1);
           finishOnboarding();
@@ -63,8 +65,8 @@ export default function Onboarding() {
       {page === 0 && (
         <>
           <Gap size={Spacing.xl} />
-          <Quote>Every path back to yourself begins with one small step.</Quote>
-          <Text style={styles.signature}>Carina Dorca · Stress & Burnout Coach</Text>
+          <Quote>{t('Every path back to yourself begins with one small step.')}</Quote>
+          <Text style={styles.signature}>Carina Dorca · {t('Stress & Burnout Coach')}</Text>
         </>
       )}
     </Screen>

@@ -4,7 +4,7 @@
  *
  *   ANTHROPIC_API_KEY=... APP_TOKEN=some-long-random-string npm start
  *
- * POST /roleplay  { scenarioId, mode: "chat" | "feedback", messages: [{ role, content }] }
+ * POST /roleplay  { scenarioId, mode: "chat" | "feedback", language, opening?, messages: [{ role, content }] }
  *   -> { reply: string }
  */
 import Anthropic from '@anthropic-ai/sdk';
@@ -18,12 +18,23 @@ const MODEL = 'claude-opus-5-5';
 const MAX_TURNS = 30;
 const MAX_CHARS = 1500;
 
+const LANGUAGE_NAMES: Record<string, string> = { en: 'English', de: 'German', ro: 'Romanian', es: 'Spanish' };
+
+/** Shown when the model declines to continue. */
+const PAUSE_MESSAGE: Record<string, string> = {
+  en: "Let's pause this practice here. If things feel heavy right now, please reach out to someone you trust or a local crisis line.",
+  de: 'Lass uns diese Übung hier pausieren. Wenn sich gerade alles schwer anfühlt, wende dich bitte an einen Menschen, dem du vertraust, oder an eine Krisenhotline.',
+  ro: 'Hai să facem o pauză aici. Dacă acum totul pare greu, te rog să vorbești cu cineva în care ai încredere sau să suni la o linie de criză.',
+  es: 'Hagamos una pausa aquí. Si ahora todo se siente pesado, habla con alguien de confianza o llama a una línea de crisis.',
+};
+
 const client = new Anthropic();
 
-const rolePrompt = (s: Scenario) => `You are helping someone practise setting a boundary, inside a stress and burnout coaching app.
+const rolePrompt = (s: Scenario, opening: string, language: string) => `You are helping someone practise setting a boundary, inside a stress and burnout coaching app.
 
 You play ${s.role}. Situation: ${s.situation}
-You already opened the conversation with: "${s.opening}"
+You already opened the conversation with: "${opening}"
+Speak ${language} only, in a natural, everyday tone.
 
 Stay in character and keep every reply short (1-3 sentences), natural and spoken, like a real chat message.
 Push back realistically at first (gentle pressure, guilt or "just this once"), so the user gets to practise holding their boundary.
@@ -31,11 +42,11 @@ If the user stays clear, kind and firm two or three times, start to accept it. N
 Do not coach, explain or break character. Never mention that you are an AI.
 If the user writes something that suggests they are in crisis or in danger, step out of the role and gently encourage them to contact local emergency services or a crisis line.`;
 
-const feedbackPrompt = (s: Scenario) => `You are a warm, practical stress and burnout coach. Your style: kind, direct, encouraging, "not all at once" (one small improvement at a time).
+const feedbackPrompt = (s: Scenario, language: string) => `You are a warm, practical stress and burnout coach. Your style: kind, direct, encouraging, "not all at once" (one small improvement at a time).
 
 The user just practised this situation: ${s.situation} The other person was ${s.role}.
 
-Give feedback on how the user set their boundary, addressed directly to them ("you"). Plain text, no markdown headings, under 150 words:
+Give feedback on how the user set their boundary, addressed directly to them ("you"), written in ${language}. Plain text, no markdown headings, under 150 words:
 1. One thing they did well (quote their words if useful).
 2. One thing to try next time, with an example sentence they could say.
 3. One short encouraging line.`;
@@ -58,15 +69,19 @@ async function roleplay(body: any): Promise<string> {
   if (!scenario) throw new HttpError(400, 'Unknown scenario');
   const history = cleanMessages(body?.messages);
   const feedback = body?.mode === 'feedback';
+  const language = LANGUAGE_NAMES[String(body?.language)] ?? 'English';
+  // The app shows the opening line in the user's language; fall back to the English one.
+  const opening =
+    typeof body?.opening === 'string' && body.opening.trim() ? body.opening.slice(0, MAX_CHARS) : scenario.opening;
 
   // The scenario opening is the assistant's first line; the API needs a user turn first.
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     { role: 'user', content: '(The conversation starts.)' },
-    { role: 'assistant', content: scenario.opening },
+    { role: 'assistant', content: opening },
     ...history,
   ];
   if (feedback) {
-    const transcript = [`Other person: ${scenario.opening}`]
+    const transcript = [`Other person: ${opening}`]
       .concat(history.map((m) => `${m.role === 'user' ? 'User' : 'Other person'}: ${m.content}`))
       .join('\n');
     messages.splice(0, messages.length, { role: 'user', content: `Here is the practice conversation:\n\n${transcript}` });
@@ -77,7 +92,7 @@ async function roleplay(body: any): Promise<string> {
   const response = await client.beta.messages.create({
     model: MODEL,
     max_tokens: 2000,
-    system: feedback ? feedbackPrompt(scenario) : rolePrompt(scenario),
+    system: feedback ? feedbackPrompt(scenario, language) : rolePrompt(scenario, opening, language),
     output_config: { effort: feedback ? 'medium' : 'low' },
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
@@ -85,7 +100,7 @@ async function roleplay(body: any): Promise<string> {
   });
 
   if (response.stop_reason === 'refusal') {
-    return "Let's pause this practice here. If things feel heavy right now, please reach out to someone you trust or a local crisis line.";
+    return PAUSE_MESSAGE[String(body?.language)] ?? PAUSE_MESSAGE.en;
   }
   return response.content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')

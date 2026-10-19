@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Body, Button, Card, Eyebrow, Gap, Heading, PremiumBadge, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { findPatterns, TRIGGER_CATEGORIES, type TriggerCategory, type TriggerEntry } from '@/data/triggers';
+import { LOCALES, useLang, useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 export default function Triggers() {
@@ -14,7 +15,9 @@ export default function Triggers() {
   const [category, setCategory] = useState<TriggerCategory | null>(null);
   const [intensity, setIntensity] = useState<TriggerEntry['intensity']>(3);
   const [note, setNote] = useState('');
-  const insights = findPatterns(triggers);
+  const t = useT();
+  const lang = useLang();
+  const insights = findPatterns(triggers, t);
 
   const save = () => {
     if (!category) return;
@@ -27,14 +30,14 @@ export default function Triggers() {
 
   return (
     <Screen>
-      <Eyebrow>Trigger map</Eyebrow>
-      <Heading accent="patterns.">Notice your</Heading>
+      <Eyebrow>{t('Trigger map')}</Eyebrow>
+      <Heading accent={t('patterns.')}>{t('Notice your')}</Heading>
       <Gap />
-      <Body>Log stress moments in 10 seconds. After a few entries, the app shows you what keeps coming back.</Body>
+      <Body>{t('Log stress moments in 10 seconds. After a few entries, the app shows you what keeps coming back.')}</Body>
       <Gap size={Spacing.lg} />
 
       <Card>
-        <Text style={styles.cardTitle}>What stressed you?</Text>
+        <Text style={styles.cardTitle}>{t('What stressed you?')}</Text>
         <Gap size={Spacing.sm} />
         <View style={styles.grid}>
           {TRIGGER_CATEGORIES.map((c) => (
@@ -43,7 +46,7 @@ export default function Triggers() {
               onPress={() => setCategory(c.id)}
               style={[styles.cat, category === c.id && styles.catActive]}>
               <Text style={styles.catEmoji}>{c.emoji}</Text>
-              <Text style={[styles.catText, category === c.id && { color: Colors.white }]}>{c.label}</Text>
+              <Text style={[styles.catText, category === c.id && { color: Colors.white }]}>{t(c.label)}</Text>
             </Pressable>
           ))}
         </View>
@@ -51,7 +54,7 @@ export default function Triggers() {
         {category && (
           <>
             <Gap />
-            <Text style={styles.label}>How strong? {intensity}/5</Text>
+            <Text style={styles.label}>{t('How strong?')} {intensity}/5</Text>
             <View style={styles.intensityRow}>
               {([1, 2, 3, 4, 5] as const).map((n) => (
                 <Pressable
@@ -66,24 +69,24 @@ export default function Triggers() {
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="What happened? (optional)"
+              placeholder={t('What happened? (optional)')}
               placeholderTextColor={Colors.muted}
               style={styles.input}
               multiline
             />
             <Gap />
-            <Button title="Save" onPress={save} />
+            <Button title={t('Save')} onPress={save} />
           </>
         )}
       </Card>
 
       <Gap size={Spacing.lg} />
       <View style={styles.insightHeader}>
-        <Eyebrow>Your patterns</Eyebrow>
+        <Eyebrow>{t('Your patterns')}</Eyebrow>
         {!isPremium && <PremiumBadge />}
       </View>
       {insights.length === 0 ? (
-        <Body>Log at least 5 moments to see your patterns. You have {triggers.length} so far.</Body>
+        <Body>{t('Log at least 5 moments to see your patterns. You have {n} so far.', { n: triggers.length })}</Body>
       ) : isPremium ? (
         insights.map((text, i) => (
           <Card key={i} style={styles.insight}>
@@ -96,26 +99,26 @@ export default function Triggers() {
           <Text style={[styles.insightText, styles.blurred]}>{insights[0]}</Text>
           <Gap size={Spacing.sm} />
           <Text style={styles.unlock}>
-            {insights.length} patterns found · unlock with Premium
+            {t('{n} patterns found · unlock with Premium', { n: insights.length })}
           </Text>
         </Card>
       )}
 
       <Gap size={Spacing.lg} />
-      <Eyebrow>{`Log (${triggers.length})`}</Eyebrow>
-      {triggers.slice(0, 30).map((t) => {
-        const c = TRIGGER_CATEGORIES.find((x) => x.id === t.category)!;
+      <Eyebrow>{`${t('Log')} (${triggers.length})`}</Eyebrow>
+      {triggers.slice(0, 30).map((entry) => {
+        const c = TRIGGER_CATEGORIES.find((x) => x.id === entry.category)!;
         return (
-          <View key={t.id} style={styles.logRow}>
+          <View key={entry.id} style={styles.logRow}>
             <Text style={styles.catEmoji}>{c.emoji}</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.logTitle}>
-                {c.label} · {'●'.repeat(t.intensity)}
-                <Text style={{ color: Colors.creamDark }}>{'●'.repeat(5 - t.intensity)}</Text>
+                {t(c.label)} · {'●'.repeat(entry.intensity)}
+                <Text style={{ color: Colors.creamDark }}>{'●'.repeat(5 - entry.intensity)}</Text>
               </Text>
-              {t.note ? <Text style={styles.logNote}>{t.note}</Text> : null}
+              {entry.note ? <Text style={styles.logNote}>{entry.note}</Text> : null}
               <Text style={styles.logDate}>
-                {new Date(t.at).toLocaleString(undefined, {
+                {new Date(entry.at).toLocaleString(LOCALES[lang], {
                   weekday: 'short',
                   day: 'numeric',
                   month: 'short',
@@ -124,7 +127,7 @@ export default function Triggers() {
                 })}
               </Text>
             </View>
-            <Pressable onPress={() => removeTrigger(t.id)} hitSlop={10}>
+            <Pressable onPress={() => removeTrigger(entry.id)} hitSlop={10}>
               <Ionicons name="close" size={18} color={Colors.muted} />
             </Pressable>
           </View>

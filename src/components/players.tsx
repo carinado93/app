@@ -13,6 +13,7 @@ import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native
 import { Body, Button, Gap } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import type { BreathPattern, Exercise } from '@/data/exercises';
+import { useT } from '@/i18n';
 
 type PlayerProps = { exercise: Exercise; onFinish: () => void };
 
@@ -30,6 +31,7 @@ const PHASES: { key: keyof BreathPattern; label: string; scale: number }[] = [
 ];
 
 export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
+  const t = useT();
   const pattern = exercise.breath!;
   const rounds = exercise.rounds ?? 5;
   const [scale] = useState(() => new Animated.Value(0.6));
@@ -79,13 +81,13 @@ export function BreathPlayer({ exercise, onFinish }: PlayerProps) {
     <View style={styles.center}>
       <View style={styles.circleOuter}>
         <Animated.View style={[styles.circle, { transform: [{ scale }] }]} />
-        <Text style={styles.phase}>{label}</Text>
+        <Text style={styles.phase}>{t(label)}</Text>
       </View>
-      <Text style={styles.counter}>{running ? `Round ${round} of ${rounds}` : `${rounds} rounds`}</Text>
-      <Text style={styles.hint}>The phone vibrates at every change. You can close your eyes.</Text>
+      <Text style={styles.counter}>{running ? t('Round {n} of {total}', { n: round, total: rounds }) : t('{n} rounds', { n: rounds })}</Text>
+      <Text style={styles.hint}>{t('The phone vibrates at every change. You can close your eyes.')}</Text>
       <Gap size={Spacing.lg} />
       <Button
-        title={running ? 'Stop' : 'Start'}
+        title={running ? t('Stop') : t('Start')}
         variant={running ? 'outline' : 'primary'}
         onPress={() => setRunning(!running)}
       />
@@ -99,6 +101,7 @@ const BUTTERFLY_SECONDS = 90;
 const TAP_MS = 900;
 
 export function ButterflyPlayer({ onFinish }: PlayerProps) {
+  const t = useT();
   const [running, setRunning] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>('left');
   const [elapsed, setElapsed] = useState(0);
@@ -125,19 +128,19 @@ export function ButterflyPlayer({ onFinish }: PlayerProps) {
     <View style={styles.center}>
       <View style={styles.wings}>
         <View style={[styles.wing, running && side === 'left' && styles.wingActive]}>
-          <Text style={styles.wingText}>L</Text>
+          <Text style={styles.wingText}>{t('L')}</Text>
         </View>
         <View style={[styles.wing, running && side === 'right' && styles.wingActive]}>
-          <Text style={styles.wingText}>R</Text>
+          <Text style={styles.wingText}>{t('R')}</Text>
         </View>
       </View>
       <Text style={styles.counter}>
-        {running ? `${BUTTERFLY_SECONDS - elapsed}s` : `${BUTTERFLY_SECONDS} seconds`}
+        {running ? `${BUTTERFLY_SECONDS - elapsed}s` : t('{n} seconds', { n: BUTTERFLY_SECONDS })}
       </Text>
-      <Text style={styles.hint}>Tap the side that lights up. Strong vibration = left, soft = right.</Text>
+      <Text style={styles.hint}>{t('Tap the side that lights up. Strong vibration = left, soft = right.')}</Text>
       <Gap size={Spacing.lg} />
       <Button
-        title={running ? 'Stop' : 'Start'}
+        title={running ? t('Stop') : t('Start')}
         variant={running ? 'outline' : 'primary'}
         onPress={() => {
           setElapsed(0);
@@ -155,6 +158,7 @@ const HUM_GOAL_SECONDS = 60;
 const HUM_THRESHOLD = -35;
 
 export function HumPlayer({ onFinish }: PlayerProps) {
+  const t = useT();
   const recorder = useAudioRecorder({ ...RecordingPresets.LOW_QUALITY, isMeteringEnabled: true });
   const state = useAudioRecorderState(recorder, 100);
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +191,7 @@ export function HumPlayer({ onFinish }: PlayerProps) {
     setError(null);
     const perm = await AudioModule.requestRecordingPermissionsAsync();
     if (!perm.granted) {
-      setError('The microphone is needed to give feedback on your hum. Nothing is saved or sent.');
+      setError(t('The microphone is needed to give feedback on your hum. Nothing is saved or sent.'));
       return;
     }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
@@ -205,16 +209,16 @@ export function HumPlayer({ onFinish }: PlayerProps) {
             { backgroundColor: humming ? Colors.sage : Colors.sageLight, transform: [{ scale: level }] },
           ]}
         />
-        <Text style={styles.phase}>{state.isRecording ? (humming ? 'Voooo…' : 'Hum low') : 'Ready'}</Text>
+        <Text style={styles.phase}>{state.isRecording ? (humming ? 'Voooo…' : t('Hum low')) : t('Ready')}</Text>
       </View>
       <Text style={styles.counter}>
-        {Math.floor(humMs / 1000)} / {HUM_GOAL_SECONDS} seconds of humming
+        {t('{n} / {total} seconds of humming', { n: Math.floor(humMs / 1000), total: HUM_GOAL_SECONDS })}
       </Text>
-      <Text style={styles.hint}>The microphone only listens to the volume. Nothing is recorded or sent.</Text>
+      <Text style={styles.hint}>{t('The microphone only listens to the volume. Nothing is recorded or sent.')}</Text>
       {error && <Body style={{ color: Colors.danger, textAlign: 'center' }}>{error}</Body>}
       <Gap size={Spacing.lg} />
       <Button
-        title={state.isRecording ? 'Stop' : 'Start humming'}
+        title={state.isRecording ? t('Stop') : t('Start humming')}
         variant={state.isRecording ? 'outline' : 'primary'}
         onPress={() => (state.isRecording ? recorder.stop() : start().catch((e) => setError(String(e))))}
       />
@@ -225,13 +229,14 @@ export function HumPlayer({ onFinish }: PlayerProps) {
 // ---------- Guided steps ----------
 
 export function GuidedPlayer({ exercise, onFinish }: PlayerProps) {
+  const t = useT();
   const [step, setStep] = useState(0);
   const last = step === exercise.steps.length - 1;
 
   return (
     <View>
       <Text style={styles.counter}>
-        Step {step + 1} of {exercise.steps.length}
+        {t('Step {n} of {total}', { n: step + 1, total: exercise.steps.length })}
       </Text>
       <Gap size={Spacing.sm} />
       <View style={styles.stepCard}>
@@ -239,7 +244,7 @@ export function GuidedPlayer({ exercise, onFinish }: PlayerProps) {
       </View>
       <Gap size={Spacing.lg} />
       <Button
-        title={last ? 'Finish' : 'Next'}
+        title={last ? t('Finish') : t('Next')}
         onPress={() => {
           vibrate();
           if (last) onFinish();
@@ -249,7 +254,7 @@ export function GuidedPlayer({ exercise, onFinish }: PlayerProps) {
       {step > 0 && (
         <>
           <Gap size={Spacing.sm} />
-          <Button title="Back" variant="outline" onPress={() => setStep(step - 1)} />
+          <Button title={t('Back')} variant="outline" onPress={() => setStep(step - 1)} />
         </>
       )}
     </View>

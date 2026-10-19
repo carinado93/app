@@ -48,7 +48,8 @@
           "microphonePermission": "The microphone listens to the volume of your humming to give feedback. Nothing is recorded or sent."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

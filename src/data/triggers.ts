@@ -35,28 +35,32 @@ function top<T extends string>(items: T[]) {
 }
 
 /** Plain-language patterns found in the trigger log. Needs at least 5 entries. */
-export function findPatterns(entries: TriggerEntry[]): string[] {
+export function findPatterns(
+  entries: TriggerEntry[],
+  t: (text: string, vars?: Record<string, string | number>) => string = (x, v) =>
+    v ? x.replace(/\{(\w+)\}/g, (_, k) => String(v[k])) : x,
+): string[] {
   if (entries.length < 5) return [];
   const insights: string[] = [];
 
   const cat = top(entries.map((e) => e.category));
   if (cat) {
-    const label = TRIGGER_CATEGORIES.find((c) => c.id === cat[0])!.label.toLowerCase();
+    const label = t(TRIGGER_CATEGORIES.find((c) => c.id === cat[0])!.label).toLowerCase();
     const pct = Math.round((cat[1] / entries.length) * 100);
-    insights.push(`${pct}% of your stress moments are about ${label}.`);
+    insights.push(t('{pct}% of your stress moments are about {topic}.', { pct, topic: label }));
   }
 
   const when = top(
     entries.map((e) => {
       const d = new Date(e.at);
-      return `${DAYS[d.getDay()]} ${timeOfDay(d.getHours())}` as string;
+      return t('{day} {time}', { day: t(DAYS[d.getDay()]), time: t(timeOfDay(d.getHours())) });
     }),
   );
-  if (when && when[1] >= 2) insights.push(`Your stress tends to rise on ${when[0]}.`);
+  if (when && when[1] >= 2) insights.push(t('Your stress tends to rise on {when}.', { when: when[0] }));
 
   const strongest = [...entries].sort((a, b) => b.intensity - a.intensity)[0];
-  const strongLabel = TRIGGER_CATEGORIES.find((c) => c.id === strongest.category)!.label.toLowerCase();
-  insights.push(`Your strongest reactions come from ${strongLabel}.`);
+  const strongLabel = t(TRIGGER_CATEGORIES.find((c) => c.id === strongest.category)!.label).toLowerCase();
+  insights.push(t('Your strongest reactions come from {topic}.', { topic: strongLabel }));
 
   const week = 7 * 86_400_000;
   const now = Date.now();
@@ -65,9 +69,9 @@ export function findPatterns(entries: TriggerEntry[]): string[] {
   if (lastWeek.length > 0) {
     const avg = (xs: TriggerEntry[]) => xs.reduce((s, e) => s + e.intensity, 0) / (xs.length || 1);
     const diff = avg(thisWeek) - avg(lastWeek);
-    if (thisWeek.length && diff <= -0.5) insights.push('Your stress was less intense this week than last week. 🌱');
+    if (thisWeek.length && diff <= -0.5) insights.push(`${t('Your stress was less intense this week than last week.')} 🌱`);
     if (thisWeek.length && diff >= 0.5)
-      insights.push('This week felt heavier than last week. Be extra gentle with yourself.');
+      insights.push(t('This week felt heavier than last week. Be extra gentle with yourself.'));
   }
 
   return insights;

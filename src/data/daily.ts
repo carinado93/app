@@ -1,4 +1,4 @@
-import { exercisesFor, type Weather } from './exercises';
+import { EXERCISES, type Exercise, type Weather } from './exercises';
 
 export const WEATHER: Record<
   Weather,
@@ -60,9 +60,14 @@ export function dayIndex(date = new Date()) {
   return Math.floor((date.getTime() - start.getTime()) / 86_400_000);
 }
 
-export function dailyPlan(weather: Weather, date = new Date()) {
-  const steps = TINY_STEPS[weather];
-  const exercises = exercisesFor(weather);
+/** Today's step and exercise; pass translated lists to get them in the user's language. */
+export function dailyPlan(
+  weather: Weather,
+  content: { tinySteps: Record<Weather, string[]>; exercises: Exercise[] } = { tinySteps: TINY_STEPS, exercises: EXERCISES },
+  date = new Date(),
+) {
+  const steps = content.tinySteps[weather];
+  const exercises = content.exercises.filter((e) => e.weather.includes(weather));
   const i = dayIndex(date);
   // Free exercises first so everyone gets a working daily step.
   const ordered = [...exercises.filter((e) => e.free), ...exercises.filter((e) => !e.free)];

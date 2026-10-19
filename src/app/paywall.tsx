@@ -7,6 +7,7 @@ import { Body, Button, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { buy, getPlans, purchasesEnabled, restore, type Plan } from '@/lib/purchases';
 import { TEST_MODE } from '@/lib/test-mode';
+import { useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 const FEATURES = [
@@ -21,6 +22,7 @@ const FEATURES = [
 
 export default function Paywall() {
   const { setPremium, isPremium } = useApp();
+  const t = useT();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selected, setSelected] = useState<Plan['id']>('annual');
   const [busy, setBusy] = useState(false);
@@ -40,7 +42,7 @@ export default function Paywall() {
         router.back();
       }
     } catch (e: any) {
-      Alert.alert('Purchase failed', e?.message ?? 'Please try again.');
+      Alert.alert(t('Purchase failed'), e?.message ?? t('Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -49,25 +51,25 @@ export default function Paywall() {
   if (isPremium) {
     return (
       <Screen>
-        <Heading accent="Premium.">You have</Heading>
+        <Heading accent={t('Premium.')}>{t('You have')}</Heading>
         <Gap />
-        <Body>Thank you for supporting this work. Everything is unlocked.</Body>
+        <Body>{t('Thank you for supporting this work. Everything is unlocked.')}</Body>
         <Gap size={Spacing.lg} />
-        <Button title="Back" onPress={() => router.back()} />
+        <Button title={t('Back')} onPress={() => router.back()} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Eyebrow>Premium</Eyebrow>
-      <Heading accent="whole toolkit.">Your</Heading>
+      <Eyebrow>{t('Premium')}</Eyebrow>
+      <Heading accent={t('whole toolkit.')}>{t('Your')}</Heading>
       <Gap size={Spacing.lg} />
 
       {FEATURES.map((f) => (
         <View key={f} style={styles.feature}>
           <Ionicons name="checkmark-circle" size={20} color={Colors.sage} />
-          <Text style={styles.featureText}>{f}</Text>
+          <Text style={styles.featureText}>{t(f)}</Text>
         </View>
       ))}
       <Gap size={Spacing.lg} />
@@ -81,27 +83,29 @@ export default function Paywall() {
             onPress={() => setSelected(p.id)}
             style={[styles.plan, selected === p.id && styles.planActive]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.planTitle}>{p.title}</Text>
-              <Text style={styles.planNote}>{p.note}</Text>
+              <Text style={styles.planTitle}>{t(p.title)}</Text>
+              <Text style={styles.planNote}>{t(p.note)}</Text>
             </View>
-            <Text style={styles.planPrice}>{p.price}</Text>
+            <Text style={styles.planPrice}>
+              {p.price} / {t(p.period)}
+            </Text>
           </Pressable>
         ))
       )}
       <Gap />
 
       {purchasesEnabled ? (
-        <Button title={busy ? 'One moment…' : 'Start 7 days free'} onPress={purchase} disabled={busy || !plan} />
+        <Button title={busy ? t('One moment…') : t('Start 7 days free')} onPress={purchase} disabled={busy || !plan} />
       ) : (
         <>
           <Body style={styles.small}>
-            Preview mode: Google Play billing is not connected yet.
+            {t('Preview mode: Google Play billing is not connected yet.')}
           </Body>
           {TEST_MODE && (
             <>
               <Gap size={Spacing.sm} />
               <Button
-                title="Preview: unlock premium"
+                title={t('Preview: unlock premium')}
                 onPress={() => {
                   setPremium(true);
                   router.back();
@@ -118,14 +122,15 @@ export default function Paywall() {
           if (ok) {
             setPremium(true);
             router.back();
-          } else Alert.alert('No subscription found', 'We could not find an active subscription.');
+          } else Alert.alert(t('No subscription found'), t('We could not find an active subscription.'));
         }}>
-        <Text style={styles.restore}>Restore purchases</Text>
+        <Text style={styles.restore}>{t('Restore purchases')}</Text>
       </Pressable>
       <Gap />
       <Body style={styles.small}>
-        Free for 7 days, then billed by Google Play. Cancel anytime in Google Play at least 24 hours before the
-        trial ends and you will not be charged.
+        {t(
+          'Free for 7 days, then billed by Google Play. Cancel anytime in Google Play at least 24 hours before the trial ends and you will not be charged.',
+        )}
       </Body>
     </Screen>
   );

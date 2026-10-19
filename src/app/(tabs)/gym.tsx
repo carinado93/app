@@ -4,9 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Card, Eyebrow, Gap, Heading, PremiumBadge, Screen, usePremiumGate } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { getExercise } from '@/data/exercises';
-import { ALL_SESSIONS, GYM } from '@/data/gym';
-import { PROGRAMS } from '@/data/programs';
+import { ALL_SESSIONS } from '@/data/gym';
+import { useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { useApp } from '@/store/app-state';
 
 /** The first session is a free taster; everything else is premium. */
@@ -15,23 +15,26 @@ const FREE_SESSION = 'f1';
 export default function Gym() {
   const { gymDone, markGymDone, isPremium, programs } = useApp();
   const gate = usePremiumGate();
+  const t = useT();
+  const content = useContent();
   const progress = gymDone.length / ALL_SESSIONS.length;
   // Next session = first one not done yet.
   const next = ALL_SESSIONS.find((s) => !gymDone.includes(s.id));
 
   return (
     <Screen>
-      <Eyebrow>Nervous System Gym</Eyebrow>
-      <Heading accent="like a muscle.">Train your calm</Heading>
+      <Eyebrow>{t('Nervous System Gym')}</Eyebrow>
+      <Heading accent={t('like a muscle.')}>{t('Train your calm')}</Heading>
       <Gap />
       <Body>
-        Stress capacity grows with small, safe repetitions. Each session is a short exercise plus one tiny
-        challenge for your real life.
+        {t(
+          'Stress capacity grows with small, safe repetitions. Each session is a short exercise plus one tiny challenge for your real life.',
+        )}
       </Body>
       <Gap size={Spacing.lg} />
 
-      <Eyebrow>Guided programs</Eyebrow>
-      {PROGRAMS.map((p) => {
+      <Eyebrow>{t('Guided programs')}</Eyebrow>
+      {content.programs.map((p) => {
         const done = Object.keys(programs[p.id]?.days ?? {}).length;
         return (
           <Card
@@ -42,21 +45,23 @@ export default function Gym() {
               <Text style={styles.programTitle}>
                 {p.title} <Text style={styles.programAccent}>{p.accent}</Text>
               </Text>
-              {p.free ? <Text style={styles.free}>FREE</Text> : !isPremium && <PremiumBadge />}
+              {p.free ? <Text style={styles.free}>{t('FREE')}</Text> : !isPremium && <PremiumBadge />}
             </View>
             <Body>{p.summary}</Body>
             <Text style={styles.programMeta}>
-              {done === 0 ? `${p.days.length} days · 5–10 min a day` : `${done} of ${p.days.length} days done`}
+              {done === 0
+                ? t('{n} days · 5–10 min a day', { n: p.days.length })
+                : t('{done} of {total} days done', { done, total: p.days.length })}
             </Text>
           </Card>
         );
       })}
       <Gap size={Spacing.lg} />
 
-      <Eyebrow>Gym levels</Eyebrow>
+      <Eyebrow>{t('Gym levels')}</Eyebrow>
       <Card>
         <Text style={styles.progressLabel}>
-          {gymDone.length} of {ALL_SESSIONS.length} sessions
+          {t('{done} of {total} sessions', { done: gymDone.length, total: ALL_SESSIONS.length })}
         </Text>
         <View style={styles.bar}>
           <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
@@ -64,11 +69,11 @@ export default function Gym() {
       </Card>
       <Gap size={Spacing.lg} />
 
-      {GYM.map((level) => {
+      {content.gym.map((level) => {
         const levelDone = level.sessions.filter((s) => gymDone.includes(s.id)).length;
         return (
           <View key={level.id} style={{ marginBottom: Spacing.xl }}>
-            <Eyebrow>{`Level ${level.level} · ${levelDone}/${level.sessions.length}`}</Eyebrow>
+            <Eyebrow>{`${t('Level {n}', { n: level.level })} · ${levelDone}/${level.sessions.length}`}</Eyebrow>
             <Text style={styles.levelTitle}>{level.title}</Text>
             <Body>{level.focus}</Body>
             <Gap size={Spacing.md} />
@@ -92,7 +97,7 @@ export default function Gym() {
                     <>
                       <Gap size={Spacing.sm} />
                       {s.exerciseIds.map((id) => {
-                        const e = getExercise(id)!;
+                        const e = content.exercise(id)!;
                         return (
                           <Text
                             key={id}
@@ -105,13 +110,13 @@ export default function Gym() {
                         );
                       })}
                       <Gap size={Spacing.sm} />
-                      <Text style={styles.challengeLabel}>CHALLENGE REP</Text>
+                      <Text style={styles.challengeLabel}>{t('Challenge rep').toUpperCase()}</Text>
                       <Text style={styles.challenge}>{s.challenge}</Text>
                       {!done && (
                         <>
                           <Gap />
                           <Button
-                            title="Session done"
+                            title={t('Session done')}
                             onPress={() => (free ? markGymDone(s.id) : gate(() => markGymDone(s.id)))}
                           />
                         </>

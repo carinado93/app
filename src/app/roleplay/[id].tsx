@@ -16,12 +16,15 @@ import {
 
 import { Body, Button, Eyebrow, Gap } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
-import { getScenario } from '@/data/boundaries';
+import { useLang, useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { askRoleplay, type ChatMessage } from '@/lib/roleplay';
 
 export default function Roleplay() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const scenario = getScenario(id)!;
+  const t = useT();
+  const language = useLang();
+  const scenario = useContent().scenario(id)!;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,10 +41,10 @@ export default function Roleplay() {
     setLoading(true);
     setError(null);
     try {
-      const reply = await askRoleplay(scenario.id, next);
+      const reply = await askRoleplay({ scenarioId: scenario.id, messages: next, language, opening: scenario.opening });
       setMessages([...next, { role: 'assistant', content: reply }]);
     } catch (e: any) {
-      setError(e.message ?? 'Something went wrong');
+      setError(e.message ?? t('Something went wrong'));
     } finally {
       setLoading(false);
       setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 100);
@@ -52,9 +55,11 @@ export default function Roleplay() {
     setLoading(true);
     setError(null);
     try {
-      setFeedback(await askRoleplay(scenario.id, messages, 'feedback'));
+      setFeedback(
+        await askRoleplay({ scenarioId: scenario.id, messages, mode: 'feedback', language, opening: scenario.opening }),
+      );
     } catch (e: any) {
-      setError(e.message ?? 'Something went wrong');
+      setError(e.message ?? t('Something went wrong'));
     } finally {
       setLoading(false);
       setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 100);
@@ -70,7 +75,7 @@ export default function Roleplay() {
       keyboardVerticalOffset={90}>
       <ScrollView ref={scroll} contentContainerStyle={styles.content}>
         <Eyebrow>{scenario.title}</Eyebrow>
-        <Body>Answer as you would in real life. Stay kind, stay clear. You can end anytime and get feedback.</Body>
+        <Body>{t('Answer as you would in real life. Stay kind, stay clear. You can end anytime and get feedback.')}</Body>
         <Gap />
 
         <Bubble role="assistant" content={scenario.opening} />
@@ -83,7 +88,7 @@ export default function Roleplay() {
         {userTurns === 0 && (
           <>
             <Gap />
-            <Eyebrow>Need words? Tap one</Eyebrow>
+            <Eyebrow>{t('Need words? Tap one')}</Eyebrow>
             {scenario.phrases.map((p) => (
               <Pressable key={p} onPress={() => setInput(p)} style={styles.phrase}>
                 <Text style={styles.phraseText}>{p}</Text>
@@ -94,14 +99,14 @@ export default function Roleplay() {
 
         {feedback && (
           <View style={styles.feedback}>
-            <Eyebrow>Coach feedback</Eyebrow>
+            <Eyebrow>{t('Coach feedback')}</Eyebrow>
             <Text style={styles.feedbackText}>{feedback}</Text>
           </View>
         )}
         {userTurns >= 2 && !feedback && !loading && (
           <>
             <Gap />
-            <Button title="End & get feedback" variant="outline" onPress={getFeedback} />
+            <Button title={t('End & get feedback')} variant="outline" onPress={getFeedback} />
           </>
         )}
       </ScrollView>
@@ -111,7 +116,7 @@ export default function Roleplay() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Your answer…"
+            placeholder={t('Your answer…')}
             placeholderTextColor={Colors.muted}
             style={styles.input}
             multiline

@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react';
 import { Platform, type ColorValue } from 'react-native';
 
 import { Colors, Fonts } from '@/constants/theme';
+import { useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -16,7 +17,9 @@ function icon(name: IconName) {
 }
 
 export default function TabLayout() {
-  const { onboarded } = useApp();
+  const { onboarded, language } = useApp();
+  const t = useT();
+  if (!language) return <Redirect href="/language" />;
   if (!onboarded) return <Redirect href="/onboarding" />;
 
   return (
@@ -34,12 +37,12 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontFamily: Fonts.sansMedium, fontSize: 11 },
         sceneStyle: { backgroundColor: Colors.cream },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: icon('sunny-outline') }} />
-      <Tabs.Screen name="exercises" options={{ title: 'Exercises', tabBarIcon: icon('leaf-outline') }} />
-      <Tabs.Screen name="gym" options={{ title: 'Gym', tabBarIcon: icon('barbell-outline') }} />
-      <Tabs.Screen name="triggers" options={{ title: 'Triggers', tabBarIcon: icon('analytics-outline') }} />
-      <Tabs.Screen name="boundaries" options={{ title: 'Practice', tabBarIcon: icon('chatbubbles-outline') }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('person-circle-outline') }} />
+      <Tabs.Screen name="index" options={{ title: t('Today'), tabBarIcon: icon('sunny-outline') }} />
+      <Tabs.Screen name="exercises" options={{ title: t('Exercises'), tabBarIcon: icon('leaf-outline') }} />
+      <Tabs.Screen name="gym" options={{ title: t('Gym'), tabBarIcon: icon('barbell-outline') }} />
+      <Tabs.Screen name="triggers" options={{ title: t('Triggers'), tabBarIcon: icon('analytics-outline') }} />
+      <Tabs.Screen name="boundaries" options={{ title: t('Practice'), tabBarIcon: icon('chatbubbles-outline') }} />
+      <Tabs.Screen name="profile" options={{ title: t('Profile'), tabBarIcon: icon('person-circle-outline') }} />
     </Tabs>
   );
 }

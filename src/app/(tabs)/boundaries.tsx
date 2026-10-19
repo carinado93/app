@@ -3,25 +3,29 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Card, Eyebrow, Gap, Heading, PremiumBadge, Screen, usePremiumGate } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { SCENARIOS } from '@/data/boundaries';
+import { useT } from '@/i18n';
+import { useContent } from '@/i18n/content';
 import { useApp } from '@/store/app-state';
 
 export default function Boundaries() {
   const { isPremium } = useApp();
   const gate = usePremiumGate();
+  const t = useT();
+  const { scenarios } = useContent();
 
   return (
     <Screen>
-      <Eyebrow>Boundary practice</Eyebrow>
-      <Heading accent="before it counts.">Practise saying no</Heading>
+      <Eyebrow>{t('Boundary practice')}</Eyebrow>
+      <Heading accent={t('before it counts.')}>{t('Practise saying no')}</Heading>
       <Gap />
       <Body>
-        Burnout often starts with too many yeses. Practise the hard conversation with an AI that plays the
-        other person, then get coaching feedback and phrases you can use.
+        {t(
+          'Burnout often starts with too many yeses. Practise the hard conversation with an AI that plays the other person, then get coaching feedback and phrases you can use.',
+        )}
       </Body>
       <Gap size={Spacing.lg} />
 
-      {SCENARIOS.map((s) => (
+      {scenarios.map((s) => (
         <Card
           key={s.id}
           style={{ marginBottom: Spacing.md }}
@@ -33,7 +37,7 @@ export default function Boundaries() {
           <View style={styles.row}>
             <Text style={styles.emoji}>{s.emoji}</Text>
             <Text style={styles.title}>{s.title}</Text>
-            {s.free ? <Text style={styles.free}>FREE</Text> : !isPremium && <PremiumBadge />}
+            {s.free ? <Text style={styles.free}>{t('FREE')}</Text> : !isPremium && <PremiumBadge />}
           </View>
         </Card>
       ))}

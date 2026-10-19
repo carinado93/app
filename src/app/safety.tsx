@@ -2,6 +2,7 @@ import { Linking, Pressable, StyleSheet, Text } from 'react-native';
 
 import { Body, Card, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 const HOTLINES = [
   { country: 'Emergency (EU)', name: 'Emergency services', number: '112' },
@@ -9,25 +10,28 @@ const HOTLINES = [
   { country: 'Austria', name: 'Telefonseelsorge (24/7)', number: '142' },
   { country: 'Switzerland', name: 'Die Dargebotene Hand (24/7)', number: '143' },
   { country: 'Romania', name: 'Telefonul Sufletului', number: '0800 801 200' },
+  { country: 'Spain', name: 'Línea 024 (24/7, free)', number: '024' },
 ];
 
 export default function Safety() {
+  const t = useT();
   return (
     <Screen>
-      <Eyebrow>You are not alone</Eyebrow>
-      <Heading accent="right now?">Need more support</Heading>
+      <Eyebrow>{t('You are not alone')}</Eyebrow>
+      <Heading accent={t('right now?')}>{t('Need more support')}</Heading>
       <Gap />
       <Body>
-        This app is coaching and self-help. It does not replace a doctor, therapist or emergency care. If you
-        are in crisis or think about harming yourself, please call someone now.
+        {t(
+          'This app is coaching and self-help. It does not replace a doctor, therapist or emergency care. If you are in crisis or think about harming yourself, please call someone now.',
+        )}
       </Body>
       <Gap size={Spacing.lg} />
 
       {HOTLINES.map((h) => (
         <Pressable key={h.number} onPress={() => Linking.openURL(`tel:${h.number.replace(/\s/g, '')}`)}>
           <Card style={styles.card}>
-            <Text style={styles.country}>{h.country.toUpperCase()}</Text>
-            <Text style={styles.name}>{h.name}</Text>
+            <Text style={styles.country}>{t(h.country).toUpperCase()}</Text>
+            <Text style={styles.name}>{t(h.name)}</Text>
             <Text style={styles.number}>{h.number}</Text>
           </Card>
         </Pressable>
@@ -35,8 +39,9 @@ export default function Safety() {
 
       <Gap />
       <Body style={styles.small}>
-        Exercises like cold exposure and breath holds are not suitable for everyone. If you are pregnant or have
-        heart, lung or other medical conditions, talk to your doctor first.
+        {t(
+          'Exercises like cold exposure and breath holds are not suitable for everyone. If you are pregnant or have heart, lung or other medical conditions, talk to your doctor first.',
+        )}
       </Body>
     </Screen>
   );

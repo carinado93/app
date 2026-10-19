@@ -7,20 +7,22 @@ import { Body, Button, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
 import { WEATHER } from '@/data/daily';
 import type { Weather } from '@/data/exercises';
+import { useT } from '@/i18n';
 import { useApp } from '@/store/app-state';
 
 const ORDER: Weather[] = ['calm', 'wired', 'shutdown'];
 
 export default function CheckIn() {
   const { checkIn, todayWeather } = useApp();
+  const t = useT();
   const [selected, setSelected] = useState<Weather | undefined>(todayWeather);
 
   return (
     <Screen>
-      <Eyebrow>Nervous System Weather</Eyebrow>
-      <Heading accent="right now?">How does your body feel</Heading>
+      <Eyebrow>{t('Nervous System Weather')}</Eyebrow>
+      <Heading accent={t('right now?')}>{t('How does your body feel')}</Heading>
       <Gap />
-      <Body>No right or wrong. Just notice.</Body>
+      <Body>{t('No right or wrong. Just notice.')}</Body>
       <Gap size={Spacing.lg} />
 
       {ORDER.map((w) => {
@@ -36,8 +38,8 @@ export default function CheckIn() {
             style={[styles.option, active && { borderColor: Colors.sage, backgroundColor: Colors.white }]}>
             <Text style={styles.emoji}>{info.emoji}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{info.label}</Text>
-              <Text style={styles.desc}>{info.description}</Text>
+              <Text style={styles.label}>{t(info.label)}</Text>
+              <Text style={styles.desc}>{t(info.description)}</Text>
             </View>
           </Pressable>
         );
@@ -46,10 +48,10 @@ export default function CheckIn() {
       {selected && (
         <>
           <Gap />
-          <Body style={styles.message}>{WEATHER[selected].message}</Body>
+          <Body style={styles.message}>{t(WEATHER[selected].message)}</Body>
           <Gap size={Spacing.lg} />
           <Button
-            title="Show my step for today"
+            title={t('Show my step for today')}
             onPress={() => {
               checkIn(selected);
               router.dismissTo('/');

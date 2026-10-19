@@ -25,7 +25,7 @@ export const WEATHER: Record<
 };
 
 /** "Not All At Once": one tiny step per day, matched to the weather. */
-const TINY_STEPS: Record<Weather, string[]> = {
+export const TINY_STEPS: Record<Weather, string[]> = {
   calm: [
     'Write down one thing you want to protect in your week.',
     'Say no to one small thing today that you would usually say yes to.',

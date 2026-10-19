@@ -93,7 +93,9 @@ def find_retakes(chunks):
     """Indices of chunks to delete. chunks: list of dicts with 'text'."""
     drop = set()
     for i, c in enumerate(chunks):
-        if normalise(c['text']) not in RETAKE_WORDS:
+        # A clap is a very short sound without words; it marks a retake just like "again".
+        clap = not normalise(c['text']) and c['end'] - c['start'] < 0.3
+        if normalise(c['text']) not in RETAKE_WORDS and not clap:
             continue
         drop.add(i)
         # The repeated sentence starts right after "again"; find where its first try started.

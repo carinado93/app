@@ -54,8 +54,8 @@ export type Plan = {
 
 /** Fallback prices shown in preview mode; real prices come from Google Play. */
 const PREVIEW_PLANS: Plan[] = [
-  { id: 'annual', title: 'Yearly', price: '€59.99 / year', note: '7 days free · save 50%' },
-  { id: 'monthly', title: 'Monthly', price: '€9.99 / month', note: '7 days free' },
+  { id: 'annual', title: 'Yearly', price: '€50 / year', note: '7 days free · save 16%' },
+  { id: 'monthly', title: 'Monthly', price: '€4.99 / month', note: '7 days free' },
 ];
 
 export async function getPlans(): Promise<Plan[]> {

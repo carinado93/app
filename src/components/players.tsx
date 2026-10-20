@@ -248,60 +248,115 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
 // ---------- Humming with microphone feedback ----------
 
 const HUM_GOAL_SECONDS = 60;
-/** dBFS above which we count it as humming. */
-const HUM_THRESHOLD = -35;
+/** Ends by itself after this long even if not all humming was counted. */
+const HUM_MAX_SECONDS = 120;
+const CALIBRATE_MS = 2000;
+/** Louder than the room (measured while breathing in, music included) by this much counts as humming. */
+const HUM_ABOVE_ROOM_DB = 8;
 
 export function HumPlayer({ exercise, onFinish }: PlayerProps) {
   const t = useT();
   const voice = useVoice();
-  const [listening, setListening] = useState(false);
-  const skipped = useRef(false);
+  const [phase, setPhase] = useState<'idle' | 'intro' | 'calibrate' | 'hum'>('idle');
   const recorder = useAudioRecorder({ ...RecordingPresets.LOW_QUALITY, isMeteringEnabled: true });
   const state = useAudioRecorderState(recorder, 100);
   const [error, setError] = useState<string | null>(null);
   const [humMs, setHumMs] = useState(0);
+  const [humming, setHumming] = useState(false);
   const [level] = useState(() => new Animated.Value(0.4));
-  const lastTick = useRef(0);
+  const db = useRef(-160);
+  useMusic(phase !== 'idle' && WITH_MUSIC.has(exercise.id));
 
-  const db = state.metering ?? -160;
-  const humming = state.isRecording && db > HUM_THRESHOLD;
+  const stopIntro = useRef<(() => void) | null>(null);
+
+  const stopRecording = () => {
+    if (recorder.isRecording) recorder.stop().catch(() => {});
+  };
+
+  const finish = async () => {
+    stopRecording();
+    setHumming(false);
+    vibrate(Haptics.ImpactFeedbackStyle.Heavy);
+    await voice.play(BREATH_CUES.done);
+    setPhase('idle');
+    onFinish();
+  };
 
   useEffect(() => {
+    db.current = state.metering ?? -160;
     if (!state.isRecording) return;
     // Map roughly -60..0 dB to 0.4..1 circle scale.
-    const normalized = Math.min(1, Math.max(0, (db + 60) / 60));
+    const normalized = Math.min(1, Math.max(0, (db.current + 60) / 60));
     Animated.timing(level, { toValue: 0.4 + normalized * 0.6, duration: 100, useNativeDriver: true }).start();
-    const now = Date.now();
-    if (humming) setHumMs((ms) => ms + (now - lastTick.current));
-    lastTick.current = now;
-  }, [state.durationMillis]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.metering]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (humMs >= HUM_GOAL_SECONDS * 1000 && state.isRecording) {
-      recorder.stop();
-      vibrate(Haptics.ImpactFeedbackStyle.Heavy);
-      onFinish();
-    }
-  }, [humMs]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (phase !== 'calibrate') return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const room: number[] = [];
+    const sample = setInterval(() => room.push(db.current), 100);
+    const go = setTimeout(() => {
+      clearInterval(sample);
+      if (cancelled) return;
+      room.sort((x, y) => x - y);
+      const threshold = Math.max((room[Math.floor(room.length / 2)] ?? -160) + HUM_ABOVE_ROOM_DB, -70);
+      setPhase('hum');
+      const started = Date.now();
+      let counted = 0;
+      timer = setInterval(() => {
+        const on = db.current > threshold;
+        setHumming(on);
+        if (on) counted += 100;
+        setHumMs(counted);
+        if (counted >= HUM_GOAL_SECONDS * 1000 || Date.now() - started >= HUM_MAX_SECONDS * 1000) {
+          clearInterval(timer);
+          finish();
+        }
+      }, 100);
+    }, CALIBRATE_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(sample);
+      clearTimeout(go);
+      clearInterval(timer);
+    };
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const start = async () => {
     setError(null);
+    setHumMs(0);
     const perm = await AudioModule.requestRecordingPermissionsAsync();
     if (!perm.granted) {
       setError(t('The microphone is needed to give feedback on your hum. Nothing is saved or sent.'));
       return;
     }
     // Carina's intro first; the microphone only listens once she has finished.
-    setListening(true);
-    skipped.current = false;
+    setPhase('intro');
+    let skipped = false;
+    stopIntro.current = () => {
+      skipped = true;
+      voice.stop();
+    };
     await voice.play(EXERCISE_VOICE[exercise.id]);
-    setListening(false);
-    if (skipped.current) return;
+    stopIntro.current = null;
+    if (skipped) return setPhase('idle');
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
-    lastTick.current = Date.now();
     recorder.record();
+    setPhase('calibrate');
   };
+
+  const label =
+    phase === 'intro'
+      ? t('Listen…')
+      : phase === 'calibrate'
+        ? t('Breathe in…')
+        : phase === 'hum'
+          ? humming
+            ? 'Voooo…'
+            : t('Hum low')
+          : t('Ready');
 
   return (
     <View style={styles.center}>
@@ -312,7 +367,7 @@ export function HumPlayer({ exercise, onFinish }: PlayerProps) {
             { backgroundColor: humming ? Colors.sage : Colors.sageLight, transform: [{ scale: level }] },
           ]}
         />
-        <Text style={styles.phase}>{listening ? t('Listen…') : state.isRecording ? (humming ? 'Voooo…' : t('Hum low')) : t('Ready')}</Text>
+        <Text style={styles.phase}>{label}</Text>
       </View>
       <Text style={styles.counter}>
         {t('{n} / {total} seconds of humming', { n: Math.floor(humMs / 1000), total: HUM_GOAL_SECONDS })}
@@ -320,17 +375,13 @@ export function HumPlayer({ exercise, onFinish }: PlayerProps) {
       <Text style={styles.hint}>{t('The microphone only listens to the volume. Nothing is recorded or sent.')}</Text>
       {error && <Body style={{ color: Colors.danger, textAlign: 'center' }}>{error}</Body>}
       <Gap size={Spacing.lg} />
-      <Button
-        title={state.isRecording || listening ? t('Stop') : t('Start humming')}
-        variant={state.isRecording || listening ? 'outline' : 'primary'}
-        onPress={() => {
-          if (listening) {
-            skipped.current = true;
-            voice.stop();
-          } else if (state.isRecording) recorder.stop();
-          else start().catch((e) => setError(String(e)));
-        }}
-      />
+      {phase === 'idle' ? (
+        <Button title={t('Start humming')} onPress={() => start().catch((e) => setError(String(e)))} />
+      ) : phase === 'intro' ? (
+        <Button title={t('Stop')} variant="outline" onPress={() => stopIntro.current?.()} />
+      ) : (
+        <Button title={t('Finish')} variant="outline" onPress={() => finish()} />
+      )}
     </View>
   );
 }

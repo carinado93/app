@@ -142,11 +142,10 @@ def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.03):
     if start is not None:
         segs.append([start * FRAME, len(loud) * FRAME])
     # Word endings fade out below the threshold (and a last soft word like "…with you" may stay below it):
-    # follow the sound down, up to 1 s after and 0.3 s before. Not below 35 dB under the loudest part of the
-    # sentence: further down is only the room echoing her voice (a low "zummm"), not the word any more.
+    # follow the sound down to just above the room noise, up to 1 s after and 0.3 s before.
+    floor = noise + 6
     for seg in segs:
         i, j = int(seg[0] / FRAME), int(seg[1] / FRAME)
-        floor = max(noise + 6, db[i:j].max() - 35)
         k = i
         while k > 0 and i - k < 0.3 / FRAME and db[k - 1] > floor:
             k -= 1
@@ -194,6 +193,13 @@ def sounds_like(a: str, b: str) -> bool:
     return bool(a) and bool(b) and skel(a) == skel(b)
 
 
+def transcribe(rec, audio: np.ndarray) -> str:
+    stream = rec.create_stream()
+    stream.accept_waveform(SR, audio)
+    rec.decode_stream(stream)
+    return stream.result.text.strip()
+
+
 def find_retakes(chunks):
     """
     Indices of chunks to delete. A retake is a short marker ("again", "nochmal", a clap, or a short
@@ -220,7 +226,8 @@ def find_retakes(chunks):
         if not (said_again or clap or short) or i == 0 or i + 1 >= len(chunks):
             continue
         repeat = ' '.join(ch['text'] for ch in chunks[i + 1 : i + 4])
-        # The first try may span several chunks (pauses inside a sentence): take the longest span that still matches.
+        # The first try may span several chunks (pauses inside a sentence): take the span that matches best
+        # (a longer one only if it matches at least as well, so a good sentence before it is never taken along).
         start, score = None, 0.0
         for j in range(i - 1, max(i - 5, -1), -1):
             if j in drop:
@@ -228,7 +235,7 @@ def find_retakes(chunks):
             span = ' '.join(ch['text'] for ch in chunks[j:i])
             sc = matches_start(span, repeat)
             # Whisper often mishears the first try ("Bucks breathing"), so explicit markers accept less.
-            if sc >= (0.6 if said_again or soft else 0.8):
+            if sc >= (0.6 if said_again or soft else 0.8) and sc >= score:
                 start, score = j, sc
         if start is None and soft:
             before, after = normalise(chunks[i - 1]['text']).split(), normalise(chunks[i + 1]['text']).split()
@@ -362,7 +369,7 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
             recognizer_for('en').decode_stream(en)
             if normalise(en.result.text) in RETAKE_WORDS:
                 text = en.result.text.strip()
-        chunks.append({'start': round(s, 2), 'end': round(e, 2), 'text': text})
+        chunks.append({'idx': len(chunks), 'start': round(s, 2), 'end': round(e, 2), 'text': text})
 
     drop = find_retakes(chunks)
     for i, c in enumerate(chunks):
@@ -372,6 +379,31 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
                 'removed': ' '.join(chunks[k]['text'] for k in range(max(c['retake_from'], 0), i + 1)),
                 'sure': c['retake_confident'],
             })
+    # "Rest your eyes there. Now find … texture. Again." said in one go: keep the sentences before the failed one.
+    for i in sorted(drop):
+        chunks[i]['dropped'] = True
+    for c in [c for c in chunks if c.get('dropped') and c.get('retake_from') == c['idx']]:
+        sentences = [t for t in re.split(r'(?<=[.!?])\s+', c['text'].strip()) if t]
+        if len(sentences) < 3:  # only the failed sentence and "Again."
+            continue
+        wanted = len(normalise(' '.join(sentences[:-2])).split())
+        part = x[int(c['start'] * SR) : int(c['end'] * SR)]
+        heard, end = 0, None
+        for a, b in segments(part, min_silence=0.12):
+            heard += len(normalise(transcribe(rec, part[int(a * SR) : int(b * SR)])).split())
+            if heard >= wanted:
+                end = c['start'] + b
+                break
+        if end is not None and end < c['end'] - 0.3:
+            kept_text = ' '.join(sentences[:-2])
+            chunks.insert(chunks.index(c), {'start': c['start'], 'end': end, 'text': kept_text})
+            c['start'], c['text'] = end, ' '.join(sentences[-2:])
+            report.setdefault('kept_before_retake', []).append(kept_text)
+            for r in report['retakes']:
+                r['removed'] = r['removed'].replace(kept_text, '').strip()
+    for k, c in enumerate(chunks):
+        c['idx'] = k
+    drop = {k for k, c in enumerate(chunks) if c.get('dropped')}
     keep = [c for i, c in enumerate(chunks) if i not in drop]
     # Whatever comes after the closing sentence is talk after the take ("Oh my god"), not part of the script.
     end = next((k for k, c in enumerate(keep) if any(starts_with(c['text'], e) for e in END_PHRASES)), None)
@@ -382,42 +414,64 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
     code = re.match(r'R\d+', path.stem.upper())
     apply_plan(code.group(0) if code else '', lang, keep, report)
 
-    # Rebuild: kept chunks with their natural pauses (pauses around removed parts are closed up).
+    # Rebuild. Every sentence keeps a generous margin of the original (quiet word endings like "seconds",
+    # "rest", "gently" are hissing sounds that a volume threshold mistakes for silence). Sentences that follow
+    # each other in the recording stay one continuous piece of the original; silence is only inserted for a
+    # longer planned pause or where a retake was removed.
     hi = load(path, 48000)
+    n = len(hi) / 48000
+    for c in keep:
+        k = c['idx']
+        lo = chunks[k - 1]['end'] + 0.05 if k > 0 else 0.0
+        up = chunks[k + 1]['start'] - 0.05 if k + 1 < len(chunks) else n
+        c['a'], c['b'] = max(c['start'] - 0.25, lo, 0.0), min(c['end'] + 0.45, up, n)
+        # Self-check: does the original with an even wider margin have a word more at the end? Then keep it.
+        wide_b = min(c['end'] + 1.0, up, n)
+        if wide_b > c['b'] + 0.1:
+            said = normalise(transcribe(rec, x[int(c['a'] * SR) : int(c['b'] * SR)])).split()
+            wide = normalise(transcribe(rec, x[int(c['a'] * SR) : int(wide_b * SR)])).split()
+            if len(wide) > len(said) and wide[: len(said)] == said:
+                report.setdefault('endings_kept', []).append(' '.join(wide[len(said) :]))
+                c['b'] = wide_b
+    runs = []
+    for c in keep:
+        prev = runs[-1][-1] if runs else None
+        joined = prev and c['idx'] == prev['idx'] + 1 and 'pause' not in c and c['a'] - prev['b'] <= 4.0
+        if joined:
+            runs[-1].append(c)
+        else:
+            runs.append([c])
     # Ticks sit well below the voice so they guide without waking anyone up.
     tick_level = 0.25 * max((np.abs(hi[int(c['start'] * 48000) : int(c['end'] * 48000)]).max(initial=0) for c in keep), default=0)
     # Cue words (R03 breathing, R04 tapping) must start right on the phase change: almost no lead-in.
-    lead = 0.05 if code and code.group(0) in ('R03', 'R04') else 0.5
-    pieces, prev_end, speech, pos = [], None, [], int(lead * 48000)
+    lead = 0.0 if code and code.group(0) in ('R03', 'R04') else 0.4
+    pieces, speech, pos = [np.zeros(int(lead * 48000), dtype=np.float32)], [], int(lead * 48000)
     step_starts = {0: 0.0} if code and code.group(0) in PLANS else {}
-    for c in keep:
-        s, e = c['start'], c['end']
-        if prev_end is not None:
-            gap = s - prev_end if s > prev_end else 0.6
-            gap = min(max(gap, 0.4), 4.0)
-            if 'pause' in c and c['ticks']:
-                pieces.append(countdown_pause(max(gap, c['pause']), tick_level))
-            elif 'pause' in c:
-                pieces.append(np.zeros(int(max(gap, c['pause']) * 48000), dtype=np.float32))
+    for r, run in enumerate(runs):
+        first = run[0]
+        if r:
+            margins = (runs[r - 1][-1]['b'] - runs[r - 1][-1]['end']) + (first['start'] - first['a'])
+            natural = min(max(first['a'] - runs[r - 1][-1]['b'], 0.3), 4.0)
+            gap = max(first.get('pause', 0) - margins, natural)
+            if 'pause' in first and first['ticks']:
+                pieces.append(countdown_pause(gap, tick_level))
             else:
                 pieces.append(np.zeros(int(gap * 48000), dtype=np.float32))
-        pos += len(pieces[-1]) if prev_end is not None else 0
-        if 'step' in c:
-            step_starts[c['step']] = round(pos / 48000, 2)
-        piece = hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.05) * 48000)].copy()
-        # Soft edges: the recorder's noise gate opens and closes with a jump, which sounds like a hum starting.
-        fi, fo = min(int(0.03 * 48000), len(piece) // 4), min(int(0.08 * 48000), len(piece) // 4)
+            pos += len(pieces[-1])
+        piece = hi[int(first['a'] * 48000) : int(run[-1]['b'] * 48000)].copy()
+        # The margins are quiet, so these fades never touch a word.
+        fi, fo = min(int(0.02 * 48000), len(piece) // 4), min(int(0.06 * 48000), len(piece) // 4)
         piece[:fi] *= np.sin(np.linspace(0, np.pi / 2, fi)) ** 2
         piece[len(piece) - fo :] *= np.cos(np.linspace(0, np.pi / 2, fo)) ** 2
+        for c in run:
+            at = pos + int((c['start'] - first['a']) * 48000)
+            speech.append((at, pos + int((c['end'] - first['a']) * 48000)))
+            if 'step' in c:
+                step_starts[c['step']] = round(at / 48000, 2)
         pieces.append(piece)
-        speech.append((pos, pos + len(pieces[-1])))
-        pos += len(pieces[-1])
-        prev_end = e
-    pad = np.zeros(int(0.5 * 48000), dtype=np.float32)
-    audio = np.concatenate([pad[: int(lead * 48000)], *pieces, pad]) if pieces else pad
-    fade = int(0.05 * 48000)
-    audio[:fade] *= np.linspace(0, 1, fade)
-    audio[-fade:] *= np.linspace(1, 0, fade)
+        pos += len(piece)
+    pieces.append(np.zeros(int(0.5 * 48000), dtype=np.float32))
+    audio = np.concatenate(pieces)
     if music:
         audio = add_music(audio, speech, music)
         report['music'] = music.name

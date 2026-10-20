@@ -32,9 +32,9 @@ export const VOICE: Record<'en' | 'de', Record<string, number>> = {
 /** Second at which each step starts, for recordings played as one piece. */
 export const VOICE_STEPS: Record<'en' | 'de', Record<string, number[]>> = {
   en: {
-    'R07': [12.82, 25.46, 35.42, 46.06, 63.38],
-    'R11': [13.24, 22.72, 31.54, 41.96, 64.64],
-    'R12': [12.5, 21.1, 33.54, 51.54, 69.58, 89.76],
+    'R07': [13.59, 26.35, 38.85, 49.57, 67.05],
+    'R11': [13.29, 23.03, 31.89, 42.29, 65.61],
+    'R12': [12.35, 21.67, 33.95, 51.47, 69.27, 88.85],
   },
   de: {
   },

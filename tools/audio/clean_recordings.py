@@ -86,6 +86,26 @@ PLANS = {
             ('Well done', None, 15, None),  # time to say it three more times, slowly
         ],
     },
+    'R14': {  # 5-4-3-2-1 Grounding: 12 s to find the things
+        'ticks': False,
+        'steps': [
+            ('Name five things you can see', None, 3, 0),
+            ('Name four things you can feel', None, 12, 1),
+            ('Name three things', None, 12, 2),
+            ('Name two things', None, 12, 3),
+            ('And name one thing', None, 12, 4),
+            ('Well done', None, 12, None),
+        ],
+    },
+    'R15': {  # Invisible Feet Push: 5 s pressing, 4 s after releasing, time for three more rounds
+        'ticks': False,
+        'steps': [
+            ('Press both feet firmly', None, 3, 0),
+            ('Release and notice', None, 5, 1),
+            ('Repeat it three times', None, 4, 2),
+            ('Well done|Well then', None, 25, None),
+        ],
+    },
     'R30': {  # Sleep Wind-Down
         'ticks': True,
         'steps': [
@@ -249,9 +269,23 @@ def find_retakes(chunks):
     return drop
 
 
+NUMBERS = ('zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen '
+           'seventeen eighteen nineteen twenty').split()
+
+
+def spell_numbers(text: str) -> str:
+    """Whisper writes "5" or "five" at random: compare numbers as words."""
+    return re.sub(r'\b(\d{1,2})\b', lambda m: NUMBERS[int(m.group(1))] if int(m.group(1)) <= 20 else m.group(1), text)
+
+
 def starts_with(text: str, phrase: str) -> bool:
-    """Whisper writes numbers as words or digits, and "4" may come out as "4-4": compare only the words."""
-    a, b = normalise(phrase).split(), normalise(text).split()
+    """
+    Whisper writes numbers as words or digits, and "4" may come out as "4-4": compare only the words.
+    A phrase may list alternatives for words Whisper mishears: "Well done|Well then".
+    """
+    if '|' in phrase:
+        return any(starts_with(text, p) for p in phrase.split('|'))
+    a, b = normalise(spell_numbers(phrase)).split(), normalise(spell_numbers(text)).split()
     return bool(a) and difflib.SequenceMatcher(None, ' '.join(a), ' '.join(b[: len(a)])).ratio() >= 0.7
 
 

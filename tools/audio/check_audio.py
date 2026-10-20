@@ -18,17 +18,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from clean_recordings import RETAKE_WORDS, SOFT_MARKERS, SR, load, normalise, segments, transcribe  # noqa: E402
+from clean_recordings import RETAKE_WORDS, SOFT_MARKERS, SR, load, normalise, segments, spell_numbers, transcribe  # noqa: E402
 import sherpa_onnx  # noqa: E402
-
-
-NUMBERS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split()
 
 
 def spelled(text: str) -> str:
     """Whisper writes "4" or "four" at random: compare numbers as words."""
     text = re.sub(r'[\(\[][^\)\]]*[\)\]]?', ' ', text)  # "(camera clicks)": Whisper describing a noise
-    return re.sub(r'\b(\d{1,2})\b', lambda m: NUMBERS[int(m.group(1))] if int(m.group(1)) <= 20 else m.group(1), text)
+    return spell_numbers(text)
 
 
 def words(rec, path: Path) -> list[str]:

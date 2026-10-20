@@ -48,7 +48,7 @@ export default function Exercises() {
           color={invisibleOnly ? Colors.sageDark : Colors.muted}
         />
         <Text style={[styles.toggleText, invisibleOnly && { color: Colors.sageDark }]}>
-          {t('Invisible mode: only exercises nobody will notice')}
+          {t('Works in public: only exercises nobody will notice')}
         </Text>
       </Pressable>
       <Gap />
@@ -65,7 +65,7 @@ export default function Exercises() {
           <Body>{e.summary}</Body>
           <Gap size={Spacing.sm} />
           <Text style={styles.meta}>
-            {e.minutes} min{e.invisible ? ` · ${t('invisible')}` : ''}
+            {e.minutes} min{e.invisible ? ` · ${t('works in public')}` : ''}
           </Text>
         </Card>
       ))}

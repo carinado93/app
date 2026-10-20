@@ -1,21 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { BreathPlayer, ButterflyPlayer, GuidedPlayer, HumPlayer } from '@/components/players';
+import { BreathPlayer, ButterflyPlayer, GuidedPlayer } from '@/components/players';
 import { Body, Button, Card, Eyebrow, Gap, Heading, Screen } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useT } from '@/i18n';
 import { useContent } from '@/i18n/content';
-import { EXERCISE_VOICE, useVoice } from '@/lib/voice';
+import { EXERCISE_VOICE, stopAllSounds, useVoice } from '@/lib/voice';
 import { useApp } from '@/store/app-state';
 
 const PLAYERS = {
   breath: BreathPlayer,
   butterfly: ButterflyPlayer,
-  hum: HumPlayer,
   guided: GuidedPlayer,
 };
 
@@ -28,6 +27,8 @@ export default function ExerciseScreen() {
   const voice = useVoice();
   // The screen must not turn off mid-exercise: that would also stop Carina's voice.
   useKeepAwake();
+  // Leaving the screen (back, another tab, the paywall) silences voice and music together.
+  useFocusEffect(useCallback(() => stopAllSounds, []));
 
   if (!exercise) {
     return (
@@ -43,7 +44,7 @@ export default function ExerciseScreen() {
 
   return (
     <Screen>
-      <Eyebrow>{`${exercise.minutes} min${exercise.invisible ? ` · ${t('invisible')}` : ''}`}</Eyebrow>
+      <Eyebrow>{`${exercise.minutes} min${exercise.invisible ? ` · ${t('works in public')}` : ''}`}</Eyebrow>
       <Heading>{exercise.title}</Heading>
       <Gap size={Spacing.sm} />
       <Body>{exercise.summary}</Body>

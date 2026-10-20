@@ -66,8 +66,8 @@ export const GYM: GymLevel[] = [
       {
         id: 'r3',
         title: 'Waking up gently',
-        exerciseIds: ['energize', 'hum'],
-        challenge: 'In your next foggy moment, hum for one minute instead of scrolling.',
+        exerciseIds: ['energize', 'wake-stretch'],
+        challenge: 'In your next foggy moment, stretch for one minute instead of scrolling.',
       },
     ],
   },
@@ -118,7 +118,7 @@ export const GYM: GymLevel[] = [
       {
         id: 'x3',
         title: 'Your personal toolkit',
-        exerciseIds: ['sigh', 'hum', 'orienting'],
+        exerciseIds: ['sigh', 'butterfly', 'orienting'],
         challenge: 'Write down your top 3 exercises and where you will use each one.',
       },
     ],

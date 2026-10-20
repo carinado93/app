@@ -12,7 +12,7 @@ import { useApp } from '@/store/app-state';
 
 const FEATURES = [
   '21-Day Overwhelm Prevention program',
-  'All 26 body exercises, incl. sleep wind-down',
+  'All 25 body exercises, incl. sleep wind-down',
   'The full Nervous System Gym (4 levels)',
   'All Learn articles',
   'Your personal trigger patterns',

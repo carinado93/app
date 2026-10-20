@@ -1,16 +1,9 @@
-/** Interactive exercise players: breathing, butterfly tapping, humming and guided steps. */
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-  useAudioRecorderState,
-} from 'expo-audio';
+/** Interactive exercise players: breathing, butterfly tapping and guided steps. */
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, Vibration, View } from 'react-native';
 
-import { Body, Button, Gap } from '@/components/ui';
+import { Button, Gap } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import type { BreathPattern, Exercise } from '@/data/exercises';
 import { useT } from '@/i18n';
@@ -241,147 +234,6 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
           setRunning(!running);
         }}
       />
-    </View>
-  );
-}
-
-// ---------- Humming with microphone feedback ----------
-
-const HUM_GOAL_SECONDS = 60;
-/** Ends by itself after this long even if not all humming was counted. */
-const HUM_MAX_SECONDS = 120;
-const CALIBRATE_MS = 2000;
-/** Louder than the room (measured while breathing in, music included) by this much counts as humming. */
-const HUM_ABOVE_ROOM_DB = 8;
-
-export function HumPlayer({ exercise, onFinish }: PlayerProps) {
-  const t = useT();
-  const voice = useVoice();
-  const [phase, setPhase] = useState<'idle' | 'intro' | 'calibrate' | 'hum'>('idle');
-  const recorder = useAudioRecorder({ ...RecordingPresets.LOW_QUALITY, isMeteringEnabled: true });
-  const state = useAudioRecorderState(recorder, 100);
-  const [error, setError] = useState<string | null>(null);
-  const [humMs, setHumMs] = useState(0);
-  const [humming, setHumming] = useState(false);
-  const [level] = useState(() => new Animated.Value(0.4));
-  const db = useRef(-160);
-  useMusic(phase !== 'idle' && WITH_MUSIC.has(exercise.id));
-
-  const stopIntro = useRef<(() => void) | null>(null);
-
-  const stopRecording = () => {
-    if (recorder.isRecording) recorder.stop().catch(() => {});
-  };
-
-  const finish = async () => {
-    stopRecording();
-    setHumming(false);
-    vibrate(Haptics.ImpactFeedbackStyle.Heavy);
-    await voice.play(BREATH_CUES.done);
-    setPhase('idle');
-    onFinish();
-  };
-
-  useEffect(() => {
-    db.current = state.metering ?? -160;
-    if (!state.isRecording) return;
-    // Map roughly -60..0 dB to 0.4..1 circle scale.
-    const normalized = Math.min(1, Math.max(0, (db.current + 60) / 60));
-    Animated.timing(level, { toValue: 0.4 + normalized * 0.6, duration: 100, useNativeDriver: true }).start();
-  }, [state.metering]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (phase !== 'calibrate') return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setInterval> | undefined;
-    const room: number[] = [];
-    const sample = setInterval(() => room.push(db.current), 100);
-    const go = setTimeout(() => {
-      clearInterval(sample);
-      if (cancelled) return;
-      room.sort((x, y) => x - y);
-      const threshold = Math.max((room[Math.floor(room.length / 2)] ?? -160) + HUM_ABOVE_ROOM_DB, -70);
-      setPhase('hum');
-      const started = Date.now();
-      let counted = 0;
-      timer = setInterval(() => {
-        const on = db.current > threshold;
-        setHumming(on);
-        if (on) counted += 100;
-        setHumMs(counted);
-        if (counted >= HUM_GOAL_SECONDS * 1000 || Date.now() - started >= HUM_MAX_SECONDS * 1000) {
-          clearInterval(timer);
-          finish();
-        }
-      }, 100);
-    }, CALIBRATE_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(sample);
-      clearTimeout(go);
-      clearInterval(timer);
-    };
-  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const start = async () => {
-    setError(null);
-    setHumMs(0);
-    const perm = await AudioModule.requestRecordingPermissionsAsync();
-    if (!perm.granted) {
-      setError(t('The microphone is needed to give feedback on your hum. Nothing is saved or sent.'));
-      return;
-    }
-    // Carina's intro first; the microphone only listens once she has finished.
-    setPhase('intro');
-    let skipped = false;
-    stopIntro.current = () => {
-      skipped = true;
-      voice.stop();
-    };
-    await voice.play(EXERCISE_VOICE[exercise.id]);
-    stopIntro.current = null;
-    if (skipped) return setPhase('idle');
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
-    recorder.record();
-    setPhase('calibrate');
-  };
-
-  const label =
-    phase === 'intro'
-      ? t('Listen…')
-      : phase === 'calibrate'
-        ? t('Breathe in…')
-        : phase === 'hum'
-          ? humming
-            ? 'Voooo…'
-            : t('Hum low')
-          : t('Ready');
-
-  return (
-    <View style={styles.center}>
-      <View style={styles.circleOuter}>
-        <Animated.View
-          style={[
-            styles.circle,
-            { backgroundColor: humming ? Colors.sage : Colors.sageLight, transform: [{ scale: level }] },
-          ]}
-        />
-        <Text style={styles.phase}>{label}</Text>
-      </View>
-      <Text style={styles.counter}>
-        {t('{n} / {total} seconds of humming', { n: Math.floor(humMs / 1000), total: HUM_GOAL_SECONDS })}
-      </Text>
-      <Text style={styles.hint}>{t('The microphone only listens to the volume. Nothing is recorded or sent.')}</Text>
-      {error && <Body style={{ color: Colors.danger, textAlign: 'center' }}>{error}</Body>}
-      <Gap size={Spacing.lg} />
-      {phase === 'idle' ? (
-        <Button title={t('Start humming')} onPress={() => start().catch((e) => setError(String(e)))} />
-      ) : phase === 'intro' ? (
-        <Button title={t('Stop')} variant="outline" onPress={() => stopIntro.current?.()} />
-      ) : (
-        <Button title={t('Finish')} variant="outline" onPress={() => finish()} />
-      )}
     </View>
   );
 }

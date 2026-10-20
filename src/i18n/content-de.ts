@@ -48,17 +48,6 @@ export const DE: ContentTranslation = {
       why: 'Wenn das Ausatmen länger ist als das Einatmen, übernimmt der beruhigende Teil des Nervensystems.',
       steps: ['Atme 4 Sekunden durch die Nase ein.', 'Halte 7 Sekunden.', 'Atme 8 Sekunden durch den Mund aus.'],
     },
-    hum: {
-      title: 'Vagus-Summen',
-      summary: 'Summe ein tiefes „Wuuu“. Die App hört zu und zeigt dir, wie gleichmäßig dein Summen ist.',
-      why: 'Der Vagusnerv verläuft an deinen Stimmbändern vorbei. Langes, tiefes Summen bringt ihn sanft in Schwingung und aktiviert dein Beruhigungssystem.',
-      steps: [
-        'Atme bequem ein.',
-        'Summe ein tiefes, langes „Wuuu“, bis der Atem aufgebraucht ist.',
-        'Spüre die Vibration in Brust und Hals.',
-        'Wiederhole es. Versuche, den Kreis ruhig zu halten.',
-      ],
-    },
     shake: {
       title: 'Abschütteln',
       summary: 'Schüttle Hände, Arme und Beine aus, so wie du nach dem Schwimmen Wasser abschüttelst. Lass die Anspannung abfallen.',
@@ -397,9 +386,9 @@ export const DE: ContentTranslation = {
         },
         {
           title: 'Der Vagusnerv',
-          intro: 'Deine Stimme ist direkt mit deinem Beruhigungssystem verbunden. Summen ist ein einfacher Weg, es zu nutzen.',
-          task: 'Summe heute bei einem Lied mit und spüre die Vibration richtig.',
-          reflection: 'Wie hat sich dein Körper nach dem Summen angefühlt?',
+          intro: 'Ein langes, langsames Ausatmen ist direkt mit deinem Beruhigungssystem verbunden. Heute nutzt du es ganz bewusst.',
+          task: 'Atme heute dreimal doppelt so lange aus, wie du einatmest.',
+          reflection: 'Wie hat sich dein Körper nach dem langen Ausatmen angefühlt?',
         },
         {
           title: 'Weicher Blick',
@@ -486,7 +475,7 @@ export const DE: ContentTranslation = {
       sessions: {
         r1: { title: 'Ruhig unter Druck', challenge: 'Mach in deiner nächsten stressigen Situation 3 Runden Box-Atmung.' },
         r2: { title: 'Energie rauslassen', challenge: 'Schüttle dich nach deinem nächsten schwierigen Gespräch 30 Sekunden lang aus.' },
-        r3: { title: 'Sanft aufwachen', challenge: 'Summe in deinem nächsten nebligen Moment eine Minute lang, statt zu scrollen.' },
+        r3: { title: 'Sanft aufwachen', challenge: 'Streck dich in deinem nächsten nebligen Moment eine Minute lang, statt zu scrollen.' },
       },
     },
     capacity: {

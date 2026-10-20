@@ -165,10 +165,10 @@ export const PROGRAMS: Program[] = [
       },
       {
         title: 'The vagus nerve',
-        intro: 'Your voice is directly connected to your calming system. Humming is a simple way to use it.',
-        exerciseId: 'hum',
-        task: 'Hum along to one song today, really feeling the vibration.',
-        reflection: 'How did your body feel after humming?',
+        intro: 'A long, slow breath out is directly connected to your calming system. Today you use it on purpose.',
+        exerciseId: 'long-exhale',
+        task: 'Three times today, breathe out twice as long as you breathe in.',
+        reflection: 'How did your body feel after the long breaths out?',
       },
       {
         title: 'Soft focus',

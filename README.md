@@ -11,7 +11,7 @@ Built with Expo (React Native), so one codebase works for Android now and iOS la
 | **Not All At Once**: one tiny daily step, forgiving streak | `src/app/(tabs)/index.tsx`, `src/data/daily.ts` | Free |
 | **Nervous System Weather**: daily check-in (calm / wired / shut down) | `src/app/checkin.tsx` | Free |
 | **SOS button** ("I need calm now") | Today screen | Free |
-| **Body exercises (26)**: breathing with haptics, butterfly tapping, humming with mic feedback, guided steps, "invisible mode" | `src/app/(tabs)/exercises.tsx`, `src/components/players.tsx`, `src/data/exercises.ts` | 4 free, rest Premium |
+| **Body exercises (25)**: breathing with haptics, butterfly tapping, guided steps with Carina's voice, "works in public" filter | `src/app/(tabs)/exercises.tsx`, `src/components/players.tsx`, `src/data/exercises.ts` | 4 free, rest Premium |
 | **Nervous System Gym**: 4 levels, 12 sessions with challenge reps | `src/app/(tabs)/gym.tsx`, `src/data/gym.ts` | 1st session free |
 | **Programs**: 7-Day Stress Reset, 21-Day Overwhelm Prevention (one day per calendar day, reflections) | `src/app/program/[id].tsx`, `src/data/programs.ts` | 7-day free, 21-day Premium |
 | **Learn**: 10 short articles | `src/app/learn/`, `src/data/learn.ts` | 3 free, rest Premium |

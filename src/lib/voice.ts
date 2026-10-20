@@ -15,7 +15,6 @@ export const EXERCISE_VOICE: Record<string, string> = {
   orienting: 'R07',
   box: 'R08',
   'long-exhale': 'R09',
-  hum: 'R10',
   shake: 'R11',
   affirmations: 'R12',
   energize: 'R13',
@@ -37,6 +36,39 @@ export const EXERCISE_VOICE: Record<string, string> = {
   'eye-palming': 'R29',
   'sleep-wind-down': 'R30',
 };
+
+/** Every sound that is playing, so leaving a screen can silence voice, music and taps together. */
+const PLAYING = new Set<AudioPlayer>();
+
+function newPlayer(source: number) {
+  const p = createAudioPlayer(source);
+  PLAYING.add(p);
+  return p;
+}
+
+/** Pause and mute first: on Android removing a player alone does not stop it right away. */
+function release(p: AudioPlayer) {
+  PLAYING.delete(p);
+  try {
+    p.volume = 0;
+    p.pause();
+    p.remove();
+  } catch {
+    // already released
+  }
+}
+
+/** Silence everything at once, e.g. when the person leaves an exercise. */
+export function stopAllSounds() {
+  PLAYING.forEach((p) => {
+    try {
+      p.volume = 0;
+      p.pause();
+    } catch {
+      // already released
+    }
+  });
+}
 
 export const WELCOME_VOICE = 'R01';
 export const SOS_VOICE = 'R02';
@@ -74,7 +106,7 @@ export function useVoice() {
     return () => {
       mounted.current = false;
       finish.current?.();
-      player.current?.remove();
+      if (player.current) release(player.current);
       player.current = null;
       loaded.current = null;
     };
@@ -96,7 +128,7 @@ export function useVoice() {
       const source = VOICE[lang][code];
       if (!source || !mounted.current) return resolve();
       setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false }).catch(() => {});
-      if (!player.current) player.current = createAudioPlayer(source);
+      if (!player.current) player.current = newPlayer(source);
       else if (loaded.current !== source) player.current.replace(source);
       else player.current.seekTo(0).catch(() => {});
       loaded.current = source;
@@ -119,9 +151,19 @@ export function useVoice() {
 
 /**
  * Exercises with calm music under the voice and the pauses (added as Carina tests them).
- * Humming measures the room with the music playing, so the music is not counted as humming.
  */
-export const WITH_MUSIC = new Set(['sigh', 'butterfly', 'orienting', 'box', 'long-exhale', 'hum', 'shake', 'affirmations']);
+export const WITH_MUSIC = new Set([
+  'sigh',
+  'butterfly',
+  'orienting',
+  'box',
+  'long-exhale',
+  'shake',
+  'affirmations',
+  'energize',
+  'grounding',
+  'feet',
+]);
 
 // Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.
 const CALM_MUSIC = require('../../assets/audio/music/calm.m4a');
@@ -131,7 +173,7 @@ const MUSIC_VOLUME = 0.18;
 export function useMusic(on: boolean) {
   useEffect(() => {
     if (!on) return;
-    const player = createAudioPlayer(CALM_MUSIC);
+    const player = newPlayer(CALM_MUSIC);
     player.loop = true;
     player.volume = 0;
     player.play();
@@ -146,10 +188,10 @@ export function useMusic(on: boolean) {
       let v = player.volume;
       const fadeOut = setInterval(() => {
         v -= MUSIC_VOLUME / 15;
-        if (v > 0) player.volume = v;
+        if (v > 0 && PLAYING.has(player)) player.volume = v;
         else {
           clearInterval(fadeOut);
-          player.remove();
+          release(player);
         }
       }, 100);
     };
@@ -166,12 +208,14 @@ export function useTapSounds() {
   const players = useRef<Record<'left' | 'right', AudioPlayer> | null>(null);
 
   useEffect(() => {
-    players.current = { left: createAudioPlayer(TAP_SOUNDS.left), right: createAudioPlayer(TAP_SOUNDS.right) };
+    players.current = { left: newPlayer(TAP_SOUNDS.left), right: newPlayer(TAP_SOUNDS.right) };
     players.current.left.volume = 0.6;
     players.current.right.volume = 0.6;
     return () => {
-      players.current?.left.remove();
-      players.current?.right.remove();
+      if (players.current) {
+        release(players.current.left);
+        release(players.current.right);
+      }
       players.current = null;
     };
   }, []);

@@ -96,8 +96,9 @@ R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts b
   "One more time" at the start of the last round and "Well done" at the end.
 - Butterfly Hug: intro, then "Left" … "Right" to set the rhythm, "Keep tapping slowly" halfway,
   "Slowly come to a stop" 8 s before the end.
-- Humming: intro, then the microphone starts.
-- Guided with a plan in `PLANS` (R07 Orienting, R30 Sleep Wind-Down): one continuous track with the pauses
+- Vagus Humming (R10) was removed from the app at Carina's request; the app no longer uses the microphone.
+- Guided with a plan in `PLANS` (R07 Orienting, R11 Shake It Off, R12 Calming Affirmations, R14 Grounding,
+  R15 Invisible Feet Push, R30 Sleep Wind-Down): one continuous track with the pauses
   from the table, calm music, and the step text follows her voice (step times from `<name>.steps.json`,
   written by the cleaner and copied by `install_voice.py` into `VOICE_STEPS`). Nothing to tap.
 - Other guided recordings: a "Listen to Carina" button plays the recording; the steps still have Next.
@@ -110,6 +111,7 @@ R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts b
   (volume 0.18, fades in 3 s) from the intro to the end. Instrumental, generated with
   `tools/audio/make_ambient.py --loop`, so no licence is needed. Carina adds exercises one at a time after testing.
 - The exercise screen keeps the phone awake (`expo-keep-awake`), so the screen and the voice do not stop.
+- Leaving the exercise screen silences voice, music and taps together (`stopAllSounds`).
 - Breathing vibration: 400 ms buzz for breathing in, 250 ms for the other phases (Android).
 
 ## Recording quality notes

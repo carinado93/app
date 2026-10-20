@@ -26,7 +26,7 @@ export type Exercise = {
   title: string;
   minutes: number;
   /** Which player screen runs it. */
-  kind: 'breath' | 'butterfly' | 'hum' | 'guided';
+  kind: 'breath' | 'butterfly' | 'guided';
   /** Nervous system states this exercise is good for. */
   weather: Weather[];
   situations: Situation[];
@@ -126,24 +126,6 @@ export const EXERCISES: Exercise[] = [
     steps: ['Breathe in through the nose for 4.', 'Hold for 7.', 'Breathe out through the mouth for 8.'],
     breath: { inhale: 4, hold: 7, exhale: 8, rest: 0 },
     rounds: 4,
-  },
-  {
-    id: 'hum',
-    title: 'Vagus Humming',
-    minutes: 2,
-    kind: 'hum',
-    weather: ['wired', 'shutdown'],
-    situations: ['car', 'sleep', 'scrolling'],
-    free: false,
-    invisible: false,
-    summary: 'Hum a low "voooo". The app listens and shows you how steady your hum is.',
-    why: 'The vagus nerve runs past your vocal cords. Long, low humming vibrates it gently and activates your calming system.',
-    steps: [
-      'Take a comfortable breath in.',
-      'Hum a low, long "voooo" until the breath is gone.',
-      'Feel the vibration in your chest and throat.',
-      'Repeat. Try to keep the circle steady.',
-    ],
   },
   {
     id: 'shake',

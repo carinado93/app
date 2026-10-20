@@ -117,8 +117,21 @@ R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts b
 The raw files are quiet (speech peaks around −36 dB over −52 dB room noise) and have low rumble.
 The tool high-passes at 70 Hz and adapts the speech threshold per file. Carina's recorder does not beep:
 only high pure tones (> 500 Hz) count as beeps, and a short sound touching the very start or end of a file
-is treated as the record/stop tap. Word endings fade below the speech threshold, so each piece is followed
-down to 6 dB above the room noise, but not lower than 35 dB under the loudest part of the sentence (up to 1 s after,
-0.3 s before): endings and soft last words stay, the room echo ("zummm") does not. Every piece fades in (30 ms) and
-out (80 ms), because her recorder's noise gate opens and closes abruptly. Cue words (R03/R04) start after 0.05 s,
-right on the phase change. Anything after "Let's begin" / "Take a moment to notice how you feel" is cut.
+is treated as the record/stop tap. Cue words (R03/R04) start right on the phase change (no lead-in).
+Anything after "Let's begin" / "Take a moment to notice how you feel" is cut.
+
+Cutting: every sentence keeps a generous margin of the original (0.25 s before, 0.45 s after), because the ends of
+words like "seconds", "rest", "gently" are quiet hissing sounds that any volume threshold takes for silence (a tighter
+cut against the room echo cut them off). Sentences that follow each other stay one continuous piece of the original;
+silence is only inserted for a planned pause or where a retake was removed, with short fades on the quiet margins.
+Self-check: if Whisper hears a word more at the end with an even wider margin, the piece is extended.
+The low room echo behind her voice comes from the room and the recorder's noise gate; the music covers most of it.
+For new recordings: switch off the recorder's noise gate and record close to the mic in a soft-furnished room.
+
+## Before anything goes to Carina
+
+1. `python tools/audio/check_audio.py --model … --report report.json --raw <originals> --cleaned <cleaned>`:
+   Whisper compares original and cleaned file word by word; it fails on any missing word and on a retake whose
+   sentence is not said again (so a good sentence can never be cut by mistake). One little word ("to") is only
+   reported as "listen".
+2. `tools/check_before_build.sh`: typecheck, lint and a full Android bundle that must contain every recording.

@@ -229,6 +229,18 @@ def find_retakes(chunks):
     drop = set()
     for i, c in enumerate(chunks):
         text = normalise(c['text'])
+        # Said twice in a row without a marker ("Coherent breathing … Coherent breathing"): the first was a false start.
+        if i + 1 < len(chunks) and len(text) >= 12:
+            nxt = ' '.join(ch['text'] for ch in chunks[i + 1 : i + 3])
+            first, again = text.split(), normalise(nxt).split()
+            # Every word must match ("coherent britain" ~ "coherent breathing"), not just the start
+            # ("notice your breath" is not repeated by "notice your head").
+            if len(again) >= len(first) and all(
+                difflib.SequenceMatcher(None, w, v).ratio() >= 0.6 for w, v in zip(first, again)
+            ):
+                c['retake_from'], c['retake_confident'] = i, False
+                drop.add(i)
+                continue
         # "Tap gently with each hand again." said without a pause: first try and marker in one piece.
         words = text.split()
         tail = next((w for w in sorted(RETAKE_WORDS, key=len, reverse=True) if text.endswith(' ' + w)), None)

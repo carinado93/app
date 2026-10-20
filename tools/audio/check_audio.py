@@ -73,7 +73,10 @@ def main():
         heard = ' '.join(after)
         for x in r['retakes']:
             for sentence in re.split(r'(?<=[.!?])\s+', spelled(x['removed'])):
-                w = [v for v in normalise(sentence).split() if v not in RETAKE_WORDS | SOFT_MARKERS]
+                said = normalise(sentence).split()
+                if said and said[0] in RETAKE_WORDS:
+                    continue  # the instruction itself: "Again from the beginning."
+                w = [v for v in said if v not in RETAKE_WORDS | SOFT_MARKERS]
                 if len(w) >= 3:
                     probe = ' '.join(w[:6])
                     best = max((difflib.SequenceMatcher(None, probe, heard[k : k + len(probe)]).ratio()

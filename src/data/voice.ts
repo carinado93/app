@@ -23,7 +23,11 @@ export const VOICE: Record<'en' | 'de', Record<string, number>> = {
     'R13': require('../../assets/audio/en/R13.m4a'),
     'R14': require('../../assets/audio/en/R14.m4a'),
     'R15': require('../../assets/audio/en/R15.m4a'),
+    'R16': require('../../assets/audio/en/R16.m4a'),
+    'R17': require('../../assets/audio/en/R17.m4a'),
     'R18': require('../../assets/audio/en/R18.m4a'),
+    'R19': require('../../assets/audio/en/R19.m4a'),
+    'R20': require('../../assets/audio/en/R20.m4a'),
     'R28': require('../../assets/audio/en/R28.m4a'),
   },
   de: {
@@ -38,6 +42,10 @@ export const VOICE_STEPS: Record<'en' | 'de', Record<string, number[]>> = {
     'R12': [12.35, 21.67, 33.95, 51.47, 69.27, 88.85],
     'R14': [13.39, 27.75, 47.61, 62.09, 76.59],
     'R15': [13.03, 21.85, 28.47],
+    'R16': [15.09, 26.27, 36.81, 47.49],
+    'R17': [14.97, 24.97, 42.33, 52.49, 61.71],
+    'R19': [10.91, 23.17, 34.33, 49.19, 63.65, 79.45, 94.29],
+    'R20': [11.91, 30.31, 46.65, 62.31, 77.45, 94.35],
   },
   de: {
   },

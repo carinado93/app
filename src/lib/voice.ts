@@ -163,6 +163,11 @@ export const WITH_MUSIC = new Set([
   'energize',
   'grounding',
   'feet',
+  'self-hold',
+  'name-it',
+  'coherent',
+  'body-scan',
+  'pmr',
 ]);
 
 // Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.

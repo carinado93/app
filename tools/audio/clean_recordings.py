@@ -106,6 +106,57 @@ PLANS = {
             ('Well done|Well then', None, 25, None),
         ],
     },
+    'R16': {  # Self-Hold: 8 s after each step
+        'ticks': False,
+        'steps': [
+            ('Place one', None, 3, 0),  # not the intro's "One hand on your heart"
+            ('Feel the warmth', None, 8, 1),
+            ('Let your breath move', None, 8, 2),
+            ('Say quietly|Say quiet', None, 8, 3),
+            ('Well done|Well then', None, 8, None),
+        ],
+    },
+    'R17': {  # Name It to Tame It: 6 s after each step
+        'ticks': False,
+        'steps': [
+            ('Pause', None, 3, 0),
+            ('Find one word for the feeling', None, 6, 1),
+            ('Say it to yourself', None, 6, 2),
+            ('Now add|No Ed|And I can handle', None, 6, 3),
+            ('Take one slow breath out', None, 6, 4),
+            ('Well done|Well then', None, 6, None),
+        ],
+    },
+    'R19': {  # Quick Body Scan: 10 s per part of the body
+        'ticks': False,
+        'steps': [
+            ('Close your eyes', None, 3, 0),
+            ('Notice your head', None, 10, 1),
+            ('Notice your neck', None, 10, 2),
+            ('Notice your chest', None, 10, 3),
+            ('Notice your arms', None, 10, 4),
+            ('Notice your legs', None, 10, 5),
+            ('Notice your whole body', None, 10, 6),
+            ('Well done|Well then', None, 10, None),
+        ],
+    },
+    'R20': {  # Tense & Release: 5 s holding before each release, then 6 s to feel it
+        'ticks': False,
+        'steps': [
+            ('Make tight fists', None, 3, 0),
+            ('and release', None, 5, None),
+            ('Pull your shoulders', None, 6, 1),
+            ('and drop them', None, 5, None),
+            ('Scrunch your face', None, 6, 2),
+            ('and soften it', None, 5, None),
+            ('Tighten your belly', None, 6, 3),
+            ('and let it go', None, 5, None),
+            ('Press your legs', None, 6, 4),
+            ('and release', None, 5, None),
+            ('Breathe out slowly', None, 6, 5),
+            ('Well done|Well then|Weldon', None, 8, None),
+        ],
+    },
     'R30': {  # Sleep Wind-Down
         'ticks': True,
         'steps': [

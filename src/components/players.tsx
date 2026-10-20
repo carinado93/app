@@ -14,7 +14,16 @@ import { Body, Button, Gap } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import type { BreathPattern, Exercise } from '@/data/exercises';
 import { useT } from '@/i18n';
-import { BREATH_CUES, EXERCISE_VOICE, SOS_VOICE, TAP_CUES, useMusic, useVoice, WITH_MUSIC } from '@/lib/voice';
+import {
+  BREATH_CUES,
+  EXERCISE_VOICE,
+  SOS_VOICE,
+  TAP_CUES,
+  useMusic,
+  useTapSounds,
+  useVoice,
+  WITH_MUSIC,
+} from '@/lib/voice';
 
 /** `sos`: opened from "I need calm now": Carina's SOS words instead of the intro, and it starts by itself. */
 type PlayerProps = { exercise: Exercise; onFinish: () => void; sos?: boolean };
@@ -24,7 +33,7 @@ const vibrate = (style = Haptics.ImpactFeedbackStyle.Light) => {
 };
 
 /** A clear buzz you feel with eyes closed: Android haptic taps are too faint for that. */
-const pulse = (ms: number) => {
+const pulse = (ms: number | number[]) => {
   if (Platform.OS === 'android') Vibration.vibrate(ms);
   else vibrate(Haptics.ImpactFeedbackStyle.Heavy);
 };
@@ -135,6 +144,7 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
   const [side, setSide] = useState<'left' | 'right'>('left');
   const [elapsed, setElapsed] = useState(0);
   useMusic(running && WITH_MUSIC.has(exercise.id));
+  const tapSound = useTapSounds();
 
   useEffect(() => {
     if (!running) return;
@@ -143,8 +153,10 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
 
     const show = (s: 'left' | 'right') => {
       setSide(s);
-      // Strong = left, soft = right, and both clearly felt.
-      if (Platform.OS === 'android') pulse(s === 'left' ? 220 : 90);
+      tapSound(s);
+      // On the lap vibration strength gets lost, so the sides differ by rhythm:
+      // left = one long buzz, right = two short ones.
+      if (Platform.OS === 'android') pulse(s === 'left' ? 350 : [0, 120, 90, 120]);
       else vibrate(s === 'left' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     };
 
@@ -165,8 +177,12 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
           voice.play(TAP_CUES.stop);
         }
         if (secs >= BUTTERFLY_SECONDS) {
-          setRunning(false);
-          onFinish();
+          clearInterval(timer);
+          voice.play(BREATH_CUES.done).then(() => {
+            if (cancelled) return;
+            setRunning(false);
+            onFinish();
+          });
         }
       }, TAP_MS);
     };
@@ -205,7 +221,7 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
       <Text style={styles.counter}>
         {listening ? t('Listen…') : running ? `${BUTTERFLY_SECONDS - elapsed}s` : t('{n} seconds', { n: BUTTERFLY_SECONDS })}
       </Text>
-      <Text style={styles.hint}>{t('Tap the side that lights up. Strong vibration = left, soft = right.')}</Text>
+      <Text style={styles.hint}>{t('Tap the side that lights up. Low tone and one long buzz = left, higher tone and two short buzzes = right.')}</Text>
       <Gap size={Spacing.lg} />
       <Button
         title={running ? t('Stop') : t('Start')}

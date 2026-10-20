@@ -187,7 +187,7 @@ export const UI: { de: Record<string, string> } = {
     "L": "L",
     "R": "R",
     "{n} seconds": "{n} Sekunden",
-    "Tap the side that lights up. Strong vibration = left, soft = right.": "Tippe auf die Seite, die aufleuchtet. Starke Vibration = links, sanfte = rechts.",
+    "Tap the side that lights up. Low tone and one long buzz = left, higher tone and two short buzzes = right.": "Tippe auf die Seite, die aufleuchtet. Tiefer Ton und ein langes Vibrieren = links, höherer Ton und zweimal kurz = rechts.",
     "The microphone is needed to give feedback on your hum. Nothing is saved or sent.": "Das Mikrofon wird für das Feedback zu deinem Summen gebraucht. Nichts wird gespeichert oder gesendet.",
     "Hum low": "Summe tief",
     "Ready": "Bereit",

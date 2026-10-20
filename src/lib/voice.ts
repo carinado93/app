@@ -149,3 +149,31 @@ export function useMusic(on: boolean) {
     };
   }, [on]);
 }
+
+const TAP_SOUNDS = {
+  left: require('../../assets/audio/music/tap-left.m4a'),
+  right: require('../../assets/audio/music/tap-right.m4a'),
+};
+
+/** Soft wooden tap per side (tools/audio/make_taps.py), so the rhythm is heard even when the phone lies on the lap. */
+export function useTapSounds() {
+  const players = useRef<Record<'left' | 'right', AudioPlayer> | null>(null);
+
+  useEffect(() => {
+    players.current = { left: createAudioPlayer(TAP_SOUNDS.left), right: createAudioPlayer(TAP_SOUNDS.right) };
+    players.current.left.volume = 0.6;
+    players.current.right.volume = 0.6;
+    return () => {
+      players.current?.left.remove();
+      players.current?.right.remove();
+      players.current = null;
+    };
+  }, []);
+
+  return (side: 'left' | 'right') => {
+    const p = players.current?.[side];
+    if (!p) return;
+    p.seekTo(0).catch(() => {});
+    p.play();
+  };
+}

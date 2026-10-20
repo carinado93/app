@@ -182,6 +182,7 @@ export const UI: { de: Record<string, string> } = {
     "The phone vibrates at every change. You can close your eyes.": "Das Handy vibriert bei jedem Wechsel. Du kannst die Augen schließen.",
     "Stop": "Stopp",
     "Listen…": "Hör zu…",
+    "build": "Build",
     "{n} steps": "{n} Schritte",
     "Carina guides you through every step. You can put the phone down.": "Carina führt dich durch jeden Schritt. Du kannst das Handy weglegen.",
     "Listen to Carina": "Carina anhören",

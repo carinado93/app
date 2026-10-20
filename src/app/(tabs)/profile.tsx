@@ -200,7 +200,8 @@ export default function Profile() {
 
       <Gap size={Spacing.xl} />
       <Text style={styles.version}>
-        Not All At Once {Application.nativeApplicationVersion ?? ''} · Carina Dorca, {t('Stress & Burnout Coach')}
+        Not All At Once {Application.nativeApplicationVersion ?? ''}
+        {TEST_MODE ? ` (${t('build')} ${Application.nativeBuildVersion ?? '?'})` : ''} · Carina Dorca, {t('Stress & Burnout Coach')}
       </Text>
     </Screen>
   );

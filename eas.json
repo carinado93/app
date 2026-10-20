@@ -5,6 +5,7 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
+      "autoIncrement": true,
       "env": { "EXPO_PUBLIC_TEST_MODE": "1" }
     },
     "production": { "autoIncrement": true }

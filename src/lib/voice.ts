@@ -115,7 +115,7 @@ export function useVoice() {
 }
 
 /** Exercises with calm music under the voice and the pauses (one at a time, after Carina has tested them). */
-export const WITH_MUSIC = new Set(['sigh']);
+export const WITH_MUSIC = new Set(['sigh', 'butterfly']);
 
 // Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.
 const CALM_MUSIC = require('../../assets/audio/music/calm.m4a');

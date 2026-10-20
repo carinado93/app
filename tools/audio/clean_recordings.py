@@ -147,6 +147,16 @@ def find_retakes(chunks):
     drop = set()
     for i, c in enumerate(chunks):
         text = normalise(c['text'])
+        # "Tap gently with each hand again." said without a pause: first try and marker in one piece.
+        words = text.split()
+        tail = next((w for w in sorted(RETAKE_WORDS, key=len, reverse=True) if text.endswith(' ' + w)), None)
+        if tail and len(words) > len(tail.split()) and i + 1 < len(chunks):
+            first_try = text[: -len(tail)].strip()
+            repeat = ' '.join(ch['text'] for ch in chunks[i + 1 : i + 3])
+            if matches_start(first_try, repeat) >= 0.8:
+                c['retake_from'], c['retake_confident'] = i, True
+                drop.add(i)
+                continue
         short = c['end'] - c['start'] < 1.2 and len(text.split()) <= 2
         said_again = text in RETAKE_WORDS
         clap = not text and c['end'] - c['start'] < 0.3
@@ -291,7 +301,7 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
         if 'retake_from' in c:
             report['retakes'].append({
                 'at': f"{int(c['start'] // 60)}:{c['start'] % 60:04.1f}",
-                'removed': ' '.join(chunks[k]['text'] for k in range(max(c['retake_from'], 0), i)),
+                'removed': ' '.join(chunks[k]['text'] for k in range(max(c['retake_from'], 0), i + 1)),
                 'sure': c['retake_confident'],
             })
     keep = [c for i, c in enumerate(chunks) if i not in drop]

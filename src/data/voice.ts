@@ -14,6 +14,7 @@ export const VOICE: Record<'en' | 'de', Record<string, number>> = {
     'R04-right': require('../../assets/audio/en/R04-right.m4a'),
     'R04-slowly-come-to-a-stop': require('../../assets/audio/en/R04-slowly-come-to-a-stop.m4a'),
     'R05': require('../../assets/audio/en/R05.m4a'),
+    'R06': require('../../assets/audio/en/R06.m4a'),
     'R09': require('../../assets/audio/en/R09.m4a'),
     'R13': require('../../assets/audio/en/R13.m4a'),
     'R18': require('../../assets/audio/en/R18.m4a'),

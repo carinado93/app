@@ -134,6 +134,7 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
   const [listening, setListening] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>('left');
   const [elapsed, setElapsed] = useState(0);
+  useMusic(running && WITH_MUSIC.has(exercise.id));
 
   useEffect(() => {
     if (!running) return;
@@ -142,7 +143,9 @@ export function ButterflyPlayer({ exercise, onFinish }: PlayerProps) {
 
     const show = (s: 'left' | 'right') => {
       setSide(s);
-      vibrate(s === 'left' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+      // Strong = left, soft = right, and both clearly felt.
+      if (Platform.OS === 'android') pulse(s === 'left' ? 220 : 90);
+      else vibrate(s === 'left' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
     };
 
     const tapping = () => {

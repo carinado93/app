@@ -117,8 +117,11 @@ export function useVoice() {
   return { play, stop, has, steps };
 }
 
-/** Exercises with calm music under the voice and the pauses (one at a time, after Carina has tested them). */
-export const WITH_MUSIC = new Set(['sigh', 'butterfly', 'orienting', 'box', 'long-exhale']);
+/**
+ * Exercises with calm music under the voice and the pauses (added as Carina tests them).
+ * Not humming: the microphone would hear the music and count it as humming.
+ */
+export const WITH_MUSIC = new Set(['sigh', 'butterfly', 'orienting', 'box', 'long-exhale', 'shake', 'affirmations']);
 
 // Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.
 const CALM_MUSIC = require('../../assets/audio/music/calm.m4a');

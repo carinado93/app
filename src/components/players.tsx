@@ -58,11 +58,15 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
   useMusic(running && WITH_MUSIC.has(exercise.id));
   const [label, setLabel] = useState('Ready?');
   const [round, setRound] = useState(0);
+  const [secsLeft, setSecsLeft] = useState(0);
 
   useEffect(() => {
     if (!running) return;
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    // Seconds left in the current phase, shown in the circle (4, 3, 2, 1).
+    let phaseEnd = 0;
+    const clock = setInterval(() => setSecsLeft(Math.max(0, Math.ceil((phaseEnd - Date.now()) / 1000))), 200);
 
     const runPhase = (r: number, i: number): void => {
       if (cancelled) return;
@@ -76,6 +80,8 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
       if (seconds <= 0) return runPhase(r, i + 1);
       setRound(r + 1);
       setLabel(phase.label);
+      phaseEnd = Date.now() + seconds * 1000;
+      setSecsLeft(seconds);
       // Spoken cue; too short phases (the extra sip of the sigh) stay silent.
       if (i === 0 && r === rounds - 1 && rounds > 1) voice.play(BREATH_CUES.lastRound);
       else if (seconds >= 2) voice.play(BREATH_CUES[phase.key]);
@@ -91,6 +97,7 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
     };
 
     const finish = async () => {
+      phaseEnd = 0;
       setLabel('Well done');
       await voice.play(BREATH_CUES.done);
       if (cancelled) return;
@@ -108,6 +115,8 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
     return () => {
       cancelled = true;
       voice.stop();
+      clearInterval(clock);
+      setSecsLeft(0);
       timers.forEach(clearTimeout);
       scale.stopAnimation();
     };
@@ -118,6 +127,7 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
       <View style={styles.circleOuter}>
         <Animated.View style={[styles.circle, { transform: [{ scale }] }]} />
         <Text style={styles.phase}>{t(label)}</Text>
+        {running && secsLeft > 0 && <Text style={styles.seconds}>{secsLeft}</Text>}
       </View>
       <Text style={styles.counter}>{running ? t('Round {n} of {total}', { n: round, total: rounds }) : t('{n} rounds', { n: rounds })}</Text>
       <Text style={styles.hint}>{t('The phone vibrates at every change. You can close your eyes.')}</Text>
@@ -475,5 +485,6 @@ const styles = StyleSheet.create({
     minHeight: 180,
     justifyContent: 'center',
   },
+  seconds: { fontFamily: Fonts.sansLight, fontSize: 40, color: Colors.ink, marginTop: 4 },
   stepText: { fontFamily: Fonts.serif, fontSize: 26, lineHeight: 34, color: Colors.ink, textAlign: 'center' },
 });

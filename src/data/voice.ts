@@ -18,6 +18,9 @@ export const VOICE: Record<'en' | 'de', Record<string, number>> = {
     'R07': require('../../assets/audio/en/R07.m4a'),
     'R08': require('../../assets/audio/en/R08.m4a'),
     'R09': require('../../assets/audio/en/R09.m4a'),
+    'R10': require('../../assets/audio/en/R10.m4a'),
+    'R11': require('../../assets/audio/en/R11.m4a'),
+    'R12': require('../../assets/audio/en/R12.m4a'),
     'R13': require('../../assets/audio/en/R13.m4a'),
     'R18': require('../../assets/audio/en/R18.m4a'),
     'R28': require('../../assets/audio/en/R28.m4a'),
@@ -29,7 +32,9 @@ export const VOICE: Record<'en' | 'de', Record<string, number>> = {
 /** Second at which each step starts, for recordings played as one piece. */
 export const VOICE_STEPS: Record<'en' | 'de', Record<string, number[]>> = {
   en: {
-    'R07': [13.42, 26.35, 36.68, 47.57, 65.39],
+    'R07': [12.82, 25.46, 35.42, 46.06, 63.38],
+    'R11': [13.24, 22.72, 31.54, 41.96, 64.64],
+    'R12': [12.5, 21.1, 33.54, 51.54, 69.58, 89.76],
   },
   de: {
   },

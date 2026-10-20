@@ -9,6 +9,7 @@ import { Body, Button, Card, Eyebrow, Gap, Heading, Screen } from '@/components/
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useT } from '@/i18n';
 import { useContent } from '@/i18n/content';
+import { EXERCISE_VOICE, useVoice } from '@/lib/voice';
 import { useApp } from '@/store/app-state';
 
 const PLAYERS = {
@@ -24,6 +25,7 @@ export default function ExerciseScreen() {
   const exercise = useContent().exercise(id);
   const { isPremium } = useApp();
   const [finished, setFinished] = useState(false);
+  const voice = useVoice();
   // The screen must not turn off mid-exercise: that would also stop Carina's voice.
   useKeepAwake();
 
@@ -71,21 +73,25 @@ export default function ExerciseScreen() {
           <Button title={t('Do it again')} variant="outline" onPress={() => setFinished(false)} />
         </Card>
       ) : (
-        <Player exercise={exercise} sos={sos === '1'} onFinish={() => setFinished(true)} />
+        <>
+          {/* Read first, then start (SOS starts by itself, no time for reading). */}
+          {sos !== '1' && (exercise.kind !== 'guided' || voice.steps(EXERCISE_VOICE[exercise.id])) && (
+            <View>
+              <Eyebrow>{t('How it works')}</Eyebrow>
+              {exercise.steps.map((s, i) => (
+                <Text key={i} style={styles.step}>
+                  {i + 1}. {s}
+                </Text>
+              ))}
+              <Text style={styles.readFirst}>{t('Read this first, then press Start.')}</Text>
+              <Gap />
+            </View>
+          )}
+          <Player exercise={exercise} sos={sos === '1'} onFinish={() => setFinished(true)} />
+        </>
       )}
 
       <Gap size={Spacing.xl} />
-      {exercise.kind !== 'guided' && (
-        <View>
-          <Eyebrow>{t('How it works')}</Eyebrow>
-          {exercise.steps.map((s, i) => (
-            <Text key={i} style={styles.step}>
-              {i + 1}. {s}
-            </Text>
-          ))}
-          <Gap />
-        </View>
-      )}
       <Eyebrow>{t('Why it helps')}</Eyebrow>
       <Body>{exercise.why}</Body>
     </Screen>
@@ -96,4 +102,5 @@ const styles = StyleSheet.create({
   lockTitle: { fontFamily: Fonts.serif, fontSize: 26, color: Colors.ink, marginBottom: Spacing.sm },
   doneEmoji: { fontSize: 48, marginBottom: Spacing.sm },
   step: { fontFamily: Fonts.sansLight, fontSize: 15, lineHeight: 23, color: Colors.text, marginBottom: 4 },
+  readFirst: { fontFamily: Fonts.sansMedium, fontSize: 13, color: Colors.sageDark, marginTop: Spacing.sm },
 });

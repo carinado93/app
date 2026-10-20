@@ -118,4 +118,7 @@ The raw files are quiet (speech peaks around −36 dB over −52 dB room noise) 
 The tool high-passes at 70 Hz and adapts the speech threshold per file. Carina's recorder does not beep:
 only high pure tones (> 500 Hz) count as beeps, and a short sound touching the very start or end of a file
 is treated as the record/stop tap. Word endings fade below the speech threshold, so each piece is followed
-down to 6 dB above the room noise (up to 1 s after, 0.3 s before); otherwise endings and soft last words get cut.
+down to 6 dB above the room noise, but not lower than 35 dB under the loudest part of the sentence (up to 1 s after,
+0.3 s before): endings and soft last words stay, the room echo ("zummm") does not. Every piece fades in (30 ms) and
+out (80 ms), because her recorder's noise gate opens and closes abruptly. Cue words (R03/R04) start after 0.05 s,
+right on the phase change. Anything after "Let's begin" / "Take a moment to notice how you feel" is cut.

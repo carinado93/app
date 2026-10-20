@@ -39,6 +39,7 @@ SR = 16000
 FRAME = 0.02  # analysis frame, seconds
 RETAKE_WORDS = {'again', 'nochmal', 'noch mal', 'noch einmal', 'einmal', 'nochmals'}
 # Said after a false start ("Box breathing. Okay. Box breathing."): only a retake when the sentence is repeated.
+END_PHRASES = ["Let's begin", 'Take a moment to notice how you feel', "Lass uns beginnen", 'Nimm dir einen Moment']
 SOFT_MARKERS = {'okay', 'ok', 'sorry', 'entschuldigung'}
 
 # Recordings played as one piece, without tapping "Next".
@@ -57,6 +58,32 @@ PLANS = {
             ('then a sound close by', None, 6, None),
             ('Notice your feet on the ground', None, 8, 4),
             ('Well done', None, 8, None),
+        ],
+    },
+    'R11': {  # Shake It Off: 6 s after each step, 20 s of stronger shaking
+        'ticks': False,
+        'steps': [
+            ('Stand up', None, 3, 0),
+            ('Let the shaking move', None, 6, 1),
+            ('and now add your legs', None, 6, 2),
+            ('Shake a little stronger', None, 6, 3),
+            ('Now stop', None, 20, 4),
+            ('Well done', None, 6, None),
+        ],
+    },
+    'R12': {  # Calming Affirmations: time to breathe in, then 6 s after each affirmation (one slow breath out)
+        'ticks': False,
+        'steps': [
+            ('Put one hand on your heart', None, 3, 0),
+            ('as you breathe out', None, 4, 1),
+            ('Breathe in', None, 6, 2),
+            ('as you breathe out', None, 4, None),
+            ('Breathe in', None, 6, 3),
+            ('and as you breathe out', None, 4, None),
+            ('Breathe in again', None, 6, 4),
+            ('and as you breathe out', None, 4, None),
+            ('Choose the sentence', None, 6, 5),
+            ('Well done', None, 15, None),  # time to say it three more times, slowly
         ],
     },
     'R30': {  # Sleep Wind-Down
@@ -115,10 +142,11 @@ def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.03):
     if start is not None:
         segs.append([start * FRAME, len(loud) * FRAME])
     # Word endings fade out below the threshold (and a last soft word like "…with you" may stay below it):
-    # follow the sound down to just above the room noise, up to 1 s after and 0.3 s before.
-    floor = noise + 6
+    # follow the sound down, up to 1 s after and 0.3 s before. Not below 35 dB under the loudest part of the
+    # sentence: further down is only the room echoing her voice (a low "zummm"), not the word any more.
     for seg in segs:
         i, j = int(seg[0] / FRAME), int(seg[1] / FRAME)
+        floor = max(noise + 6, db[i:j].max() - 35)
         k = i
         while k > 0 and i - k < 0.3 / FRAME and db[k - 1] > floor:
             k -= 1
@@ -158,6 +186,14 @@ def matches_start(first_try: str, repeat: str) -> float:
     return difflib.SequenceMatcher(None, a, b[: len(a) + 4]).ratio()
 
 
+def sounds_like(a: str, b: str) -> bool:
+    """Same consonant skeleton ("Bucks" ~ "Box" -> "bks"): Whisper often mishears the first try."""
+    def skel(w):
+        w = w.replace('ck', 'k').replace('x', 'ks').replace('c', 'k').replace('ph', 'f')
+        return re.sub(r'[aeiouyäöü]', '', w)
+    return bool(a) and bool(b) and skel(a) == skel(b)
+
+
 def find_retakes(chunks):
     """
     Indices of chunks to delete. A retake is a short marker ("again", "nochmal", a clap, or a short
@@ -194,6 +230,10 @@ def find_retakes(chunks):
             # Whisper often mishears the first try ("Bucks breathing"), so explicit markers accept less.
             if sc >= (0.6 if said_again or soft else 0.8):
                 start, score = j, sc
+        if start is None and soft:
+            before, after = normalise(chunks[i - 1]['text']).split(), normalise(chunks[i + 1]['text']).split()
+            if before and after and sounds_like(before[0], after[0]):
+                start = i - 1
         if start is None and not said_again:
             continue  # a short word that belongs to the script, e.g. "Hold,"
         c['retake_from'] = start if start is not None else i - 1
@@ -214,10 +254,13 @@ def apply_plan(code: str, lang: str, keep: list, report: dict):
     if not plan:
         return
     report['planned_pauses'] = []
+    cursor = 1  # in script order: "Breathe in" occurs several times
     for en, de, pause, step in plan['steps']:
         phrase = de if lang == 'de' else en
-        hit = phrase and next((c for c in keep[1:] if 'pause' not in c and starts_with(c['text'], phrase)), None)
+        at = next((k for k in range(cursor, len(keep)) if phrase and starts_with(keep[k]['text'], phrase)), None)
+        hit = keep[at] if at is not None else None
         if hit:
+            cursor = at + 1
             hit['pause'] = pause
             hit['ticks'] = plan['ticks']
             if step is not None:
@@ -330,6 +373,11 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
                 'sure': c['retake_confident'],
             })
     keep = [c for i, c in enumerate(chunks) if i not in drop]
+    # Whatever comes after the closing sentence is talk after the take ("Oh my god"), not part of the script.
+    end = next((k for k, c in enumerate(keep) if any(starts_with(c['text'], e) for e in END_PHRASES)), None)
+    if end is not None and end + 1 < len(keep):
+        report['after_end_removed'] = ' '.join(c['text'] for c in keep[end + 1 :])
+        keep = keep[: end + 1]
     report['transcript'] = [c['text'] for c in keep]
     code = re.match(r'R\d+', path.stem.upper())
     apply_plan(code.group(0) if code else '', lang, keep, report)
@@ -338,7 +386,9 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
     hi = load(path, 48000)
     # Ticks sit well below the voice so they guide without waking anyone up.
     tick_level = 0.25 * max((np.abs(hi[int(c['start'] * 48000) : int(c['end'] * 48000)]).max(initial=0) for c in keep), default=0)
-    pieces, prev_end, speech, pos = [], None, [], int(0.5 * 48000)
+    # Cue words (R03 breathing, R04 tapping) must start right on the phase change: almost no lead-in.
+    lead = 0.05 if code and code.group(0) in ('R03', 'R04') else 0.5
+    pieces, prev_end, speech, pos = [], None, [], int(lead * 48000)
     step_starts = {0: 0.0} if code and code.group(0) in PLANS else {}
     for c in keep:
         s, e = c['start'], c['end']
@@ -354,12 +404,17 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
         pos += len(pieces[-1]) if prev_end is not None else 0
         if 'step' in c:
             step_starts[c['step']] = round(pos / 48000, 2)
-        pieces.append(hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.12) * 48000)])
+        piece = hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.05) * 48000)].copy()
+        # Soft edges: the recorder's noise gate opens and closes with a jump, which sounds like a hum starting.
+        fi, fo = min(int(0.03 * 48000), len(piece) // 4), min(int(0.08 * 48000), len(piece) // 4)
+        piece[:fi] *= np.sin(np.linspace(0, np.pi / 2, fi)) ** 2
+        piece[len(piece) - fo :] *= np.cos(np.linspace(0, np.pi / 2, fo)) ** 2
+        pieces.append(piece)
         speech.append((pos, pos + len(pieces[-1])))
         pos += len(pieces[-1])
         prev_end = e
     pad = np.zeros(int(0.5 * 48000), dtype=np.float32)
-    audio = np.concatenate([pad, *pieces, pad]) if pieces else pad
+    audio = np.concatenate([pad[: int(lead * 48000)], *pieces, pad]) if pieces else pad
     fade = int(0.05 * 48000)
     audio[:fade] *= np.linspace(0, 1, fade)
     audio[-fade:] *= np.linspace(1, 0, fade)

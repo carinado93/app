@@ -327,7 +327,69 @@ export function HumPlayer({ exercise, onFinish }: PlayerProps) {
 
 // ---------- Guided steps ----------
 
-export function GuidedPlayer({ exercise, onFinish }: PlayerProps) {
+export function GuidedPlayer(props: PlayerProps) {
+  const voice = useVoice();
+  const starts = voice.steps(EXERCISE_VOICE[props.exercise.id]);
+  return starts ? <GuidedTrack {...props} starts={starts} /> : <GuidedSteps {...props} />;
+}
+
+/** Carina's recording as one piece with music: the step text follows her voice, nothing to tap. */
+function GuidedTrack({ exercise, onFinish, starts }: PlayerProps & { starts: number[] }) {
+  const t = useT();
+  const voice = useVoice();
+  const [running, setRunning] = useState(false);
+  const [step, setStep] = useState(-1);
+  useMusic(running && WITH_MUSIC.has(exercise.id));
+
+  useEffect(() => {
+    if (!running) return;
+    let cancelled = false;
+    voice
+      .play(EXERCISE_VOICE[exercise.id], (sec) => {
+        let i = -1;
+        while (i + 1 < starts.length && sec >= starts[i + 1]) i++;
+        setStep(i);
+      })
+      .then(() => {
+        if (cancelled) return;
+        setRunning(false);
+        onFinish();
+      });
+    return () => {
+      cancelled = true;
+      voice.stop();
+    };
+  }, [running]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <View>
+      <Text style={styles.counter}>
+        {running && step >= 0
+          ? t('Step {n} of {total}', { n: step + 1, total: exercise.steps.length })
+          : running
+            ? t('Listen…')
+            : t('{n} steps', { n: exercise.steps.length })}
+      </Text>
+      <Gap size={Spacing.sm} />
+      <View style={styles.stepCard}>
+        <Text style={styles.stepText}>{running && step >= 0 ? exercise.steps[step] : exercise.summary}</Text>
+      </View>
+      <Text style={styles.hint}>{t('Carina guides you through every step. You can put the phone down.')}</Text>
+      <Gap size={Spacing.lg} />
+      <Button
+        title={running ? t('Stop') : t('Start')}
+        variant={running ? 'outline' : 'primary'}
+        onPress={() => {
+          setStep(-1);
+          setRunning(!running);
+        }}
+      />
+    </View>
+  );
+}
+
+/** Steps with Next; a Listen button when there is a recording that is not split into steps. */
+function GuidedSteps({ exercise, onFinish }: PlayerProps) {
   const t = useT();
   const voice = useVoice();
   const code = EXERCISE_VOICE[exercise.id];

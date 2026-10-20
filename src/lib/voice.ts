@@ -5,7 +5,7 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 import { useEffect, useRef } from 'react';
 
-import { VOICE } from '@/data/voice';
+import { VOICE, VOICE_STEPS } from '@/data/voice';
 import { useLang } from '@/i18n';
 
 /** Recording code of each exercise, in the order of the recording scripts. */
@@ -81,6 +81,8 @@ export function useVoice() {
   }, []);
 
   const has = (code: string) => code in VOICE[lang];
+  /** Step start times if this recording plays as one piece (see VOICE_STEPS), else undefined. */
+  const steps = (code: string): number[] | undefined => VOICE_STEPS[lang][code];
 
   const stop = () => {
     player.current?.pause();
@@ -88,7 +90,7 @@ export function useVoice() {
     finish.current = null;
   };
 
-  const play = (code: string) =>
+  const play = (code: string, onTime?: (seconds: number) => void) =>
     new Promise<void>((resolve) => {
       stop();
       const source = VOICE[lang][code];
@@ -101,6 +103,7 @@ export function useVoice() {
       const p = player.current;
       const sub = p.addListener('playbackStatusUpdate', (s) => {
         if (s.didJustFinish) done();
+        else onTime?.(s.currentTime);
       });
       const done = () => {
         sub.remove();
@@ -111,11 +114,11 @@ export function useVoice() {
       p.play();
     });
 
-  return { play, stop, has };
+  return { play, stop, has, steps };
 }
 
 /** Exercises with calm music under the voice and the pauses (one at a time, after Carina has tested them). */
-export const WITH_MUSIC = new Set(['sigh', 'butterfly']);
+export const WITH_MUSIC = new Set(['sigh', 'butterfly', 'orienting', 'box', 'long-exhale']);
 
 // Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.
 const CALM_MUSIC = require('../../assets/audio/music/calm.m4a');

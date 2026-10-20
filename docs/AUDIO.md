@@ -97,7 +97,12 @@ R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts b
 - Butterfly Hug: intro, then "Left" … "Right" to set the rhythm, "Keep tapping slowly" halfway,
   "Slowly come to a stop" 8 s before the end.
 - Humming: intro, then the microphone starts.
-- Guided: a "Listen to Carina" button plays the recording; the steps still have Next.
+- Guided with a plan in `PLANS` (R07 Orienting, R30 Sleep Wind-Down): one continuous track with the pauses
+  from the table, calm music, and the step text follows her voice (step times from `<name>.steps.json`,
+  written by the cleaner and copied by `install_voice.py` into `VOICE_STEPS`). Nothing to tap.
+- Other guided recordings: a "Listen to Carina" button plays the recording; the steps still have Next.
+- Retakes also caught: "again" at the end of the sentence without a pause, and a false start followed by a
+  short "Okay" / "Sorry" when the sentence is then repeated.
 
 ## Music and phone behaviour
 

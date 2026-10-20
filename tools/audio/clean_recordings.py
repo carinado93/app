@@ -38,19 +38,39 @@ import sherpa_onnx
 SR = 16000
 FRAME = 0.02  # analysis frame, seconds
 RETAKE_WORDS = {'again', 'nochmal', 'noch mal', 'noch einmal', 'einmal', 'nochmals'}
+# Said after a false start ("Box breathing. Okay. Box breathing."): only a retake when the sentence is repeated.
+SOFT_MARKERS = {'okay', 'ok', 'sorry', 'entschuldigung'}
 
-# Recordings played as one piece: (start of the sentence in EN, in DE, seconds of pause before it).
-# Every planned pause ends with TICKS soft ticks, one per second, then the next sentence starts.
+# Recordings played as one piece, without tapping "Next".
+# Each entry: (start of the sentence in EN, in DE or None, seconds of pause before it, index of the step in
+# src/data/exercises.ts that begins there or None). The report and a <name>.steps.json file give the time each
+# step starts in the cleaned file, so the app can show the step text along with the voice.
+# With 'ticks', every planned pause ends with TICKS soft ticks, one per second, then the next sentence starts.
 PLANS = {
-    'R30': [  # Sleep Wind-Down
-        ("Put today's worries", 'Leg die Sorgen', 10),
-        ('Breathe in for 4 and out', 'Atme 4 Sekunden ein', 15),
-        ('Tense your whole body', 'Spanne deinen ganzen', 65),  # 5 x (4 in + 8 out) and a little air
-        ('and let go completely', 'und lass ganz los', 5),  # the 5-second hold
-        ('Think of three good things', 'Denk an drei gute', 10),
-        ('Let your body get heavy', 'Lass deinen Körper', 20),
-        ('There is nothing more', 'Heute gibt es nichts', 15),
-    ],
+    'R07': {  # Orienting: 8 s after each step
+        'ticks': False,
+        'steps': [
+            ('Let your head and eyes move', None, 3, 0),
+            ('Find something with', None, 8, 1),
+            ('Now find something with an interesting texture', None, 8, 2),
+            ('Notice the sound far away', None, 8, 3),
+            ('then a sound close by', None, 6, None),
+            ('Notice your feet on the ground', None, 8, 4),
+            ('Well done', None, 8, None),
+        ],
+    },
+    'R30': {  # Sleep Wind-Down
+        'ticks': True,
+        'steps': [
+            ("Put today's worries", 'Leg die Sorgen', 10, 1),
+            ('Breathe in for 4 and out', 'Atme 4 Sekunden ein', 15, 2),
+            ('Tense your whole body', 'Spanne deinen ganzen', 65, 3),  # 5 x (4 in + 8 out) and a little air
+            ('and let go completely', 'und lass ganz los', 5, None),  # the 5-second hold
+            ('Think of three good things', 'Denk an drei gute', 10, 4),
+            ('Let your body get heavy', 'Lass deinen Körper', 20, 5),
+            ('There is nothing more', 'Heute gibt es nichts', 15, 6),
+        ],
+    },
 }
 TICKS = 3
 
@@ -159,6 +179,7 @@ def find_retakes(chunks):
                 continue
         short = c['end'] - c['start'] < 1.2 and len(text.split()) <= 2
         said_again = text in RETAKE_WORDS
+        soft = text in SOFT_MARKERS
         clap = not text and c['end'] - c['start'] < 0.3
         if not (said_again or clap or short) or i == 0 or i + 1 >= len(chunks):
             continue
@@ -170,7 +191,8 @@ def find_retakes(chunks):
                 break
             span = ' '.join(ch['text'] for ch in chunks[j:i])
             sc = matches_start(span, repeat)
-            if sc >= 0.8:
+            # Whisper often mishears the first try ("Bucks breathing"), so explicit markers accept less.
+            if sc >= (0.6 if said_again or soft else 0.8):
                 start, score = j, sc
         if start is None and not said_again:
             continue  # a short word that belongs to the script, e.g. "Hold,"
@@ -192,12 +214,15 @@ def apply_plan(code: str, lang: str, keep: list, report: dict):
     if not plan:
         return
     report['planned_pauses'] = []
-    for en, de, pause in plan:
+    for en, de, pause, step in plan['steps']:
         phrase = de if lang == 'de' else en
-        hit = next((c for c in keep[1:] if 'pause' not in c and starts_with(c['text'], phrase)), None)
+        hit = phrase and next((c for c in keep[1:] if 'pause' not in c and starts_with(c['text'], phrase)), None)
         if hit:
             hit['pause'] = pause
-        report['planned_pauses'].append({'before': phrase, 'seconds': pause, 'found': hit is not None})
+            hit['ticks'] = plan['ticks']
+            if step is not None:
+                hit['step'] = step
+        report['planned_pauses'].append({'before': phrase or en, 'seconds': pause, 'found': bool(hit)})
 
 
 def tick(sr=48000) -> np.ndarray:
@@ -314,16 +339,21 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
     # Ticks sit well below the voice so they guide without waking anyone up.
     tick_level = 0.25 * max((np.abs(hi[int(c['start'] * 48000) : int(c['end'] * 48000)]).max(initial=0) for c in keep), default=0)
     pieces, prev_end, speech, pos = [], None, [], int(0.5 * 48000)
+    step_starts = {0: 0.0} if code and code.group(0) in PLANS else {}
     for c in keep:
         s, e = c['start'], c['end']
         if prev_end is not None:
             gap = s - prev_end if s > prev_end else 0.6
             gap = min(max(gap, 0.4), 4.0)
-            if 'pause' in c:
+            if 'pause' in c and c['ticks']:
                 pieces.append(countdown_pause(max(gap, c['pause']), tick_level))
+            elif 'pause' in c:
+                pieces.append(np.zeros(int(max(gap, c['pause']) * 48000), dtype=np.float32))
             else:
                 pieces.append(np.zeros(int(gap * 48000), dtype=np.float32))
         pos += len(pieces[-1]) if prev_end is not None else 0
+        if 'step' in c:
+            step_starts[c['step']] = round(pos / 48000, 2)
         pieces.append(hi[int(max(s - 0.05, 0) * 48000) : int((e + 0.12) * 48000)])
         speech.append((pos, pos + len(pieces[-1])))
         pos += len(pieces[-1])
@@ -343,6 +373,9 @@ def process(path: Path, out_dir: Path, recognizer_for, music: Path | None = None
     sf.write(tmp, audio, 48000)
     loudnorm(tmp, out_dir / (path.stem + '.m4a'))
     tmp.unlink()
+    if step_starts:
+        report['step_starts'] = step_starts
+        (out_dir / (path.stem + '.steps.json')).write_text(json.dumps(step_starts))
     return report
 
 

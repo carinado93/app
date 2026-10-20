@@ -2,13 +2,16 @@
 Put cleaned recordings into the app.
 
 Copies each cleaned file to assets/audio/<lang>/ under a standard name (R05.m4a, R03-breathe-in.m4a)
-and regenerates src/data/voice.ts, the list of recordings the app knows about.
+and regenerates src/data/voice.ts, the list of recordings the app knows about. A <name>.steps.json next to a
+cleaned file (from PLANS in clean_recordings.py) is copied too: the app then plays that exercise as one piece
+and moves the step text along with the voice.
 Run again whenever new recordings are cleaned; files already in the app stay.
 
 Usage:
   python tools/audio/install_voice.py cleaned/*.m4a
   python tools/audio/install_voice.py            # only regenerate src/data/voice.ts
 """
+import json
 import re
 import shutil
 import sys
@@ -40,6 +43,19 @@ def write_index():
             lines.append(f"    '{f.stem}': require('../../assets/audio/{lang}/{f.name}'),")
         lines.append('  },')
     lines.append('};')
+    lines += [
+        '',
+        '/** Second at which each step starts, for recordings played as one piece. */',
+        "export const VOICE_STEPS: Record<'en' | 'de', Record<string, number[]>> = {",
+    ]
+    for lang in ('en', 'de'):
+        lines.append(f'  {lang}: {{')
+        for f in sorted((AUDIO / lang).glob('*.steps.json')):
+            starts = json.loads(f.read_text())
+            times = [starts[k] for k in sorted(starts, key=int)]
+            lines.append(f"    '{f.name.removesuffix('.steps.json')}': {json.dumps(times)},")
+        lines.append('  },')
+    lines.append('};')
     (ROOT / 'src' / 'data' / 'voice.ts').write_text('\n'.join(lines) + '\n')
 
 
@@ -53,6 +69,9 @@ def main():
         lang, stem = name
         (AUDIO / lang).mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, AUDIO / lang / f'{stem}.m4a')
+        steps = src.with_name(src.stem + '.steps.json')
+        if steps.exists():
+            shutil.copyfile(steps, AUDIO / lang / f'{stem}.steps.json')
         print(f'{src.name} -> assets/audio/{lang}/{stem}.m4a')
     write_index()
 

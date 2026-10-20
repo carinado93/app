@@ -94,7 +94,25 @@ def segments(x: np.ndarray, sr=SR, min_silence=0.35, min_sound=0.03):
                 start, quiet = None, 0
     if start is not None:
         segs.append([start * FRAME, len(loud) * FRAME])
-    return segs
+    # Word endings fade out below the threshold (and a last soft word like "…with you" may stay below it):
+    # follow the sound down to just above the room noise, up to 1 s after and 0.3 s before.
+    floor = noise + 6
+    for seg in segs:
+        i, j = int(seg[0] / FRAME), int(seg[1] / FRAME)
+        k = i
+        while k > 0 and i - k < 0.3 / FRAME and db[k - 1] > floor:
+            k -= 1
+        m = j
+        while m < len(db) and m - j < 1.0 / FRAME and db[m] > floor:
+            m += 1
+        seg[0], seg[1] = k * FRAME, m * FRAME
+    merged = []
+    for seg in segs:
+        if merged and seg[0] - merged[-1][1] < 0.1:
+            merged[-1][1] = max(merged[-1][1], seg[1])
+        else:
+            merged.append(seg)
+    return merged
 
 
 def is_beep(x: np.ndarray, sr=SR) -> bool:

@@ -8,19 +8,25 @@ import {
 } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, Text, Vibration, View } from 'react-native';
 
 import { Body, Button, Gap } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import type { BreathPattern, Exercise } from '@/data/exercises';
 import { useT } from '@/i18n';
-import { BREATH_CUES, EXERCISE_VOICE, SOS_VOICE, TAP_CUES, useVoice } from '@/lib/voice';
+import { BREATH_CUES, EXERCISE_VOICE, SOS_VOICE, TAP_CUES, useMusic, useVoice, WITH_MUSIC } from '@/lib/voice';
 
 /** `sos`: opened from "I need calm now": Carina's SOS words instead of the intro, and it starts by itself. */
 type PlayerProps = { exercise: Exercise; onFinish: () => void; sos?: boolean };
 
 const vibrate = (style = Haptics.ImpactFeedbackStyle.Light) => {
   if (Platform.OS !== 'web') Haptics.impactAsync(style).catch(() => {});
+};
+
+/** A clear buzz you feel with eyes closed: Android haptic taps are too faint for that. */
+const pulse = (ms: number) => {
+  if (Platform.OS === 'android') Vibration.vibrate(ms);
+  else vibrate(Haptics.ImpactFeedbackStyle.Heavy);
 };
 
 // ---------- Breathing ----------
@@ -40,6 +46,7 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
   const rounds = exercise.rounds ?? 5;
   const [scale] = useState(() => new Animated.Value(0.6));
   const [running, setRunning] = useState(!!sos);
+  useMusic(running && WITH_MUSIC.has(exercise.id));
   const [label, setLabel] = useState('Ready?');
   const [round, setRound] = useState(0);
 
@@ -63,8 +70,8 @@ export function BreathPlayer({ exercise, onFinish, sos }: PlayerProps) {
       // Spoken cue; too short phases (the extra sip of the sigh) stay silent.
       if (i === 0 && r === rounds - 1 && rounds > 1) voice.play(BREATH_CUES.lastRound);
       else if (seconds >= 2) voice.play(BREATH_CUES[phase.key]);
-      // Haptic cue at every phase change, so it also works with eyes closed.
-      vibrate(phase.key === 'inhale' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+      // Vibration at every phase change, so it also works with eyes closed: longer for breathing in.
+      pulse(phase.key === 'inhale' ? 400 : 250);
       Animated.timing(scale, {
         toValue: phase.scale,
         duration: seconds * 1000,

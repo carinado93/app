@@ -3,7 +3,8 @@ Make calm instrumental background music for meditations: slow soft chord pads wi
 Everything is synthesised here, so there are no rights questions.
 
 Usage:
-  python tools/audio/make_ambient.py --minutes 4 --out ambient.m4a [--seed 7]
+  python tools/audio/make_ambient.py --minutes 4 --out ambient.m4a [--seed 7] [--loop]
+  --loop: no fade in/out; the end flows into the start, so the app can repeat it without a gap.
   Then: python tools/audio/clean_recordings.py ... --music ambient.m4a "R30 EN.m4a"
 """
 import argparse
@@ -73,9 +74,13 @@ def lowpass(x: np.ndarray, cutoff=2500.0) -> np.ndarray:
     return np.fft.irfft(spec / np.sqrt(1 + (f / cutoff) ** 4), size)[: len(x)]
 
 
-def make(minutes: float, seed: int) -> np.ndarray:
+def make(minutes: float, seed: int, loop=False) -> np.ndarray:
     rng = np.random.default_rng(seed)
     total = int(minutes * 60 * SR)
+    xfade = int(CHORD_SECONDS * SR)
+    if loop:
+        # Make one chord longer than needed and blend that extra tail into the start.
+        total += xfade
     out = np.zeros(total + int(8 * SR))
     hop, overlap = int(CHORD_SECONDS * SR), 4.0
     k = 0
@@ -92,7 +97,13 @@ def make(minutes: float, seed: int) -> np.ndarray:
         out[i : i + len(b)] += b[: len(out) - i]
         t += rng.uniform(5, 11)
     out = reverb(lowpass(out), rng=rng)[:total]
-    out *= envelope(total, 4.0, 6.0)
+    if loop:
+        total -= xfade
+        ramp = np.sin(np.linspace(0, np.pi / 2, xfade)) ** 2
+        out[:xfade] = out[:xfade] * ramp + out[total:] * (1 - ramp)
+        out = out[:total]
+    else:
+        out *= envelope(total, 4.0, 6.0)
     return (out / np.abs(out).max() * 0.7).astype(np.float32)
 
 
@@ -101,8 +112,9 @@ def main():
     ap.add_argument('--minutes', type=float, default=4)
     ap.add_argument('--seed', type=int, default=7, help='another number gives another melody of bells')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--loop', action='store_true')
     a = ap.parse_args()
-    audio = make(a.minutes, a.seed)
+    audio = make(a.minutes, a.seed, a.loop)
     subprocess.run(
         ['ffmpeg', '-v', 'error', '-y', '-f', 'f32le', '-ar', str(SR), '-ac', '1', '-i', '-',
          '-c:a', 'aac', '-b:a', '160k', str(Path(a.out))],

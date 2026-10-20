@@ -113,3 +113,39 @@ export function useVoice() {
 
   return { play, stop, has };
 }
+
+/** Exercises with calm music under the voice and the pauses (one at a time, after Carina has tested them). */
+export const WITH_MUSIC = new Set(['sigh']);
+
+// Generated with tools/audio/make_ambient.py --loop: instrumental, no licence needed.
+const CALM_MUSIC = require('../../assets/audio/music/calm.m4a');
+const MUSIC_VOLUME = 0.18;
+
+/** Quiet looping music while `on`; fades in over 3 s and out over 1.5 s. */
+export function useMusic(on: boolean) {
+  useEffect(() => {
+    if (!on) return;
+    const player = createAudioPlayer(CALM_MUSIC);
+    player.loop = true;
+    player.volume = 0;
+    player.play();
+    let step = 0;
+    const fadeIn = setInterval(() => {
+      step += 1;
+      player.volume = (MUSIC_VOLUME * step) / 30;
+      if (step >= 30) clearInterval(fadeIn);
+    }, 100);
+    return () => {
+      clearInterval(fadeIn);
+      let v = player.volume;
+      const fadeOut = setInterval(() => {
+        v -= MUSIC_VOLUME / 15;
+        if (v > 0) player.volume = v;
+        else {
+          clearInterval(fadeOut);
+          player.remove();
+        }
+      }, 100);
+    };
+  }, [on]);
+}

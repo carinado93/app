@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -23,6 +24,8 @@ export default function ExerciseScreen() {
   const exercise = useContent().exercise(id);
   const { isPremium } = useApp();
   const [finished, setFinished] = useState(false);
+  // The screen must not turn off mid-exercise: that would also stop Carina's voice.
+  useKeepAwake();
 
   if (!exercise) {
     return (

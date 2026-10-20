@@ -99,9 +99,18 @@ R02 = SOS ("I need calm now" opens the sigh with R02 instead of R05 and starts b
 - Humming: intro, then the microphone starts.
 - Guided: a "Listen to Carina" button plays the recording; the steps still have Next.
 
+## Music and phone behaviour
+
+- Exercises in `WITH_MUSIC` (`src/lib/voice.ts`) play `assets/audio/music/calm.m4a` quietly in a loop
+  (volume 0.18, fades in 3 s) from the intro to the end. Instrumental, generated with
+  `tools/audio/make_ambient.py --loop`, so no licence is needed. Carina adds exercises one at a time after testing.
+- The exercise screen keeps the phone awake (`expo-keep-awake`), so the screen and the voice do not stop.
+- Breathing vibration: 400 ms buzz for breathing in, 250 ms for the other phases (Android).
+
 ## Recording quality notes
 
 The raw files are quiet (speech peaks around −36 dB over −52 dB room noise) and have low rumble.
 The tool high-passes at 70 Hz and adapts the speech threshold per file. Carina's recorder does not beep:
 only high pure tones (> 500 Hz) count as beeps, and a short sound touching the very start or end of a file
-is treated as the record/stop tap.
+is treated as the record/stop tap. Word endings fade below the speech threshold, so each piece is followed
+down to 6 dB above the room noise (up to 1 s after, 0.3 s before); otherwise endings and soft last words get cut.

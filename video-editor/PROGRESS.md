@@ -12,11 +12,14 @@
 - [ ] OK zum Bauplan (oder Änderungswünsche)
 - [ ] Grafikkarte + RAM des Windows-PCs
 - [ ] Testvideos (kurzes YouTube-Rohvideo mit Retake, ein Reel)
-- [ ] Entscheidung: Ordner `video-editor/` in diesem Repo oder eigenes Repo
+- [ ] Eigenes Repo: Carina legt es an und schickt den Namen, dann ziehen die Dateien um
 - [ ] Schriften: Google Fonts ok?
 
 ### Nächster Schritt
 Meilenstein 1: Grundgerüst, `start.bat`, Upload, Transkription mit Wort-Zeitstempeln, einfache Review-Ansicht.
+
+### Entscheidungen
+- 8.11.: **So wenig bezahlen wie möglich.** KI-Texte standardmäßig per "Kopieren & Einfügen" in claude.ai (bestehendes Abo, 0 € extra). Ollama (lokal) und Claude API nur als optionale Einstellung. Keine kostenpflichtigen Dienste einbauen.
 
 ### Notizen für die nächste Sitzung
 - Retake-Logik aus `tools/audio/clean_recordings.py` (Signalwörter + Satzanfang-Vergleich) wiederverwenden.

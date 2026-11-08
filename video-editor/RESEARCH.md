@@ -149,6 +149,19 @@ Preise pro 1 Million Tokens (1 Token ≈ ¾ Wort), Stand Okt. 2026:
 - **Gesamt: ca. 3–8 $ im Monat** mit dem besten Modell, ca. 2–4 $ mit Sonnet. Die Stil-Regeln werden zwischengespeichert ("Prompt-Caching"), das macht es nochmal billiger.
 - Ein Anthropic-API-Konto braucht ein Guthaben (Prepaid, z. B. 5–10 $ aufladen). Kein Abo.
 
+### Entscheidung (8.11.): so wenig bezahlen wie möglich → 0 € extra
+Carina möchte möglichst keine weiteren Apps/Dienste bezahlen. Darum hat die App **drei KI-Wege**, Standard ist der kostenlose:
+
+| Weg | Kosten | Qualität | Wie |
+|---|---|---|---|
+| **1. Kopieren & Einfügen mit claude.ai** (Standard) | 0 € extra (nutzt dein bestehendes Claude-Abo) | beste | App erstellt den fertigen Auftrag (mit Stil-Regeln und Leitplanken) → Knopf "Kopieren" → in claude.ai einfügen → Antwort zurück in die App einfügen. Die App prüft die Antwort (richtiges Format, genau 5 Hashtags, keine Heilversprechen). |
+| 2. Lokale KI (Ollama, offene Modelle wie Qwen/Gemma) | 0 € | spürbar schwächer, v. a. bei deutschen Hooks; braucht guten PC (16 GB RAM+) | läuft komplett auf deinem PC, automatisch |
+| 3. Claude API | ca. 3–8 $/Monat | beste, vollautomatisch | nur falls dir das Kopieren irgendwann zu umständlich wird |
+
+Hinweis: Ein claude.ai-Abo kann technisch nicht direkt von einer eigenen App benutzt werden, deshalb der Kopier-Weg.
+
+Auch sonst gilt: **kein Abo nötig** für ffmpeg, Whisper, MediaPipe, Remotion (für dich gratis), Schriften. CapCut Pro brauchst du für diese Abläufe nicht mehr; die Cover macht die App selbst (Canva bleibt optional).
+
 ### Andere mögliche Kosten (ehrlich)
 - **Strom/Zeit:** Ohne Nvidia-Grafikkarte dauert die Transkription auf der CPU etwa 0,5–1x Videolänge mit dem Modell `small` (30 Min Video ≈ 15–30 Min). Mit GPU wenige Minuten.
 - **Später online stellen:** Ein Server mit GPU kostet ca. 30–150 €/Monat. Ohne GPU (nur Vorschau, Rendern weiter lokal) ca. 5–20 €/Monat. Erst entscheiden, wenn es lokal gut läuft.

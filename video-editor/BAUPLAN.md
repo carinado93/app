@@ -12,7 +12,8 @@ Browser (dein Chrome/Edge)            Dein PC im Hintergrund
 │ - Transkript + Player   │          │ - Whisper: Transkript        │
 │ - Vorlagen, Freigaben   │          │ - MediaPipe: Blick, Hände    │
 └─────────────────────────┘          │ - Remotion: Reel-Animationen │
-                                     │ - Claude: Texte (optional)   │
+                                     │ - KI-Texte: kostenlos per    │
+                                     │   Kopieren in claude.ai      │
                                      └──────────────────────────────┘
 ```
 
@@ -87,4 +88,4 @@ Nach jedem Meilenstein bekommst du: **Screenshots der App + Vorschau-Bilder/Vide
 3. **Ort für den Code:** Ich lege die App erstmal in den Ordner `video-editor/` in diesem Repo (dein App-Repo "Not All At Once"). Sauberer wäre ein eigenes Repo. Was ist dir lieber?
 4. **Schriften:** Ist es ok, die Google-Fonts-Versionen zu nutzen? Oder hast du eigene Schriftdateien?
 5. **Später (ab M5):** 2–3 Beispiel-Cover im "Coperti reels"-Stil (lila/hell/oliv), dein Logo, Profilbild, die PDFs (Notizbuch "Not All At Once", Produkte).
-6. **Claude-API-Schlüssel:** erst ab M4 nötig. Ich zeige dir dann Schritt für Schritt, wo du ihn bekommst und in die `.env`-Datei schreibst.
+6. **KI-Texte ohne Zusatzkosten:** Standard ist "Kopieren & Einfügen" mit deinem bestehenden claude.ai-Abo (kein API-Schlüssel, 0 € extra). Lokale KI (Ollama) und Claude API sind nur optionale Schalter in den Einstellungen.
